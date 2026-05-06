@@ -17,3 +17,7 @@ be useful but are out of the current phase's scope (per CLAUDE.md).
 - The `form` component is no longer in the shadcn registry (v3 dropped the
   FormField helper). A minimal hand-rolled `components/ui/form.tsx` was added
   to keep the `<Form><FormField><FormItem><FormLabel>...` ergonomics.
+- Next.js 16 renamed the `middleware.ts` file convention to `proxy.ts` (export
+  `proxy` instead of `middleware`). The functionality is identical. The
+  Supabase helper at `lib/supabase/middleware.ts` keeps its name; the rename
+  only affects the root file.
