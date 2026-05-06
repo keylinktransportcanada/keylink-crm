@@ -30,7 +30,7 @@ Out of scope for v1: ELD integration, GPS-grade live tracking, public customer p
 
 ## Tech stack
 
-- **Framework:** Next.js 15 (App Router) with TypeScript.
+- **Framework:** Next.js 16 (App Router) with TypeScript. Note: in Next.js 16 the root middleware file is named `proxy.ts` (was `middleware.ts` in Next.js 15); the helper module under `lib/supabase/middleware.ts` keeps its name.
 - **Hosting:** Netlify, deployed as a separate site at `app.keylinktransport.ca`. Not part of the marketing site repo.
 - **Auth + DB + Storage:** Supabase. Use Row Level Security from day one.
 - **Styling:** Tailwind CSS + shadcn/ui components.

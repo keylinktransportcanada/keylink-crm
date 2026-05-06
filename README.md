@@ -139,19 +139,92 @@ Commit the result.
 
 ## Deployment to Netlify
 
-> **Coming in Chunk 6.** Netlify connection steps, env vars, and CNAME setup
-> for `app.keylinktransport.ca` will land here.
+The CRM deploys to **`app.keylinktransport.ca`** as a separate Netlify site
+(the public marketing site at keylinktransport.ca stays on its own Netlify
+project — do not touch it).
+
+### 1. Connect this repo to a new Netlify site
+
+1. Sign in to https://app.netlify.com.
+2. **Add new site → Import an existing project → GitHub**.
+3. Authorize Netlify to access the `keylinktransportcanada/keylink-crm`
+   repository.
+4. Netlify auto-detects Next.js. Confirm:
+   - **Build command:** `npm run build`
+   - **Publish directory:** `.next`
+   - **Functions directory:** (leave blank — auto-handled)
+5. Click **Deploy site**. The first build will fail because env vars aren't
+   set yet — that's expected.
+
+### 2. Set environment variables in Netlify
+
+**Site configuration → Environment variables → Add a variable**, repeat for
+each:
+
+| Key | Value | Sensitive? |
+|---|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://<project-ref>.supabase.co` | No |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJ...` | No |
+| `SUPABASE_SERVICE_ROLE_KEY` | `eyJ...` | **Yes — mark as Secret** |
+| `NEXT_PUBLIC_SITE_URL` | `https://app.keylinktransport.ca` | No |
+
+After saving, **Deploys → Trigger deploy → Deploy site** to rebuild with the
+env vars in place.
+
+### 3. Point the subdomain at Netlify
+
+1. In Netlify: **Site configuration → Domain management → Add a domain →
+   `app.keylinktransport.ca`**. Netlify will show the CNAME target it
+   expects (something like `<site-name>.netlify.app`).
+2. In your DNS provider (whoever hosts the keylinktransport.ca zone), add a
+   CNAME record:
+   - **Name/Host:** `app`
+   - **Type:** `CNAME`
+   - **Value:** the `.netlify.app` target Netlify gave you
+   - **TTL:** default (300s is fine)
+3. DNS propagation usually takes 5–15 minutes. Netlify auto-provisions a
+   Let's Encrypt cert once it sees the CNAME.
+
+### 4. Update Supabase redirect URLs
+
+Auth redirects (used by the magic-link flow) need to know about the
+production URL.
+
+1. Supabase Studio → **Authentication → URL Configuration**
+2. **Site URL:** `https://app.keylinktransport.ca`
+3. **Redirect URLs (additional):** add
+   `https://app.keylinktransport.ca/auth/callback` (and keep
+   `http://localhost:3000/auth/callback` for local dev)
+
+### 5. Customize the magic-link email template (before going live)
+
+Default Supabase emails are functional but not branded.
+
+1. Supabase Studio → **Authentication → Email Templates → Magic Link**
+2. Update the subject and body. Recommended subject: `Sign in to Keylink CRM`.
+3. Make sure the body's `{{ .ConfirmationURL }}` placeholder is preserved.
+
+### 6. Add a Staff Login link to the marketing site
+
+The CRM has no public discovery — staff need a way to find it. The
+marketing site stays out of this repo, so paste this snippet into its
+footer (or header) yourself:
+
+```html
+<a href="https://app.keylinktransport.ca/login">Staff Login</a>
+```
 
 ## Phase status
 
-Phase 1 — Foundation (in progress):
+**Phase 1 — Foundation (complete):**
 
 - [x] Repo bootstrap and spec docs
-- [x] Project scaffold (Next.js + Tailwind + shadcn + deps)
-- [x] Supabase schema, RLS, employee-id helper
-- [ ] Auth flow (login + magic link + middleware)
-- [ ] Role-aware shell + dashboard placeholders
-- [ ] Admin employee onboarding
-- [ ] Netlify deploy config
+- [x] Project scaffold (Next.js 16 + Tailwind v4 + shadcn v3 + deps)
+- [x] Supabase schema, RLS, audit_log, employee-id helper, types
+- [x] Auth flow (password login + magic-link reset + proxy with active gate)
+- [x] Role-aware shell + role-specific dashboard placeholders
+- [x] Admin employee onboarding (create + edit + deactivate/reactivate)
+- [x] Netlify deploy config + handoff docs
 
-See [`CLAUDE.md` § Build phases](./CLAUDE.md#build-phases) for the full roadmap.
+**Up next: Phase 2 — Loads & dispatch board.** See
+[`CLAUDE.md` § Build phases](./CLAUDE.md#build-phases) for the full roadmap.

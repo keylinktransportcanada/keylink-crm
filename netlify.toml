@@ -1,0 +1,18 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  # Next.js 16 requires Node 20.9+; pinning 22 LTS for predictable builds.
+  NODE_VERSION = "22"
+
+# The Netlify Next.js runtime (@netlify/plugin-nextjs) is auto-installed by
+# Netlify when it detects a Next.js project — no explicit [[plugins]] entry
+# is needed. App Router, server components, server actions, and the proxy
+# (middleware) are all handled by the runtime.
+
+# Netlify environment variables that must be set in the site settings:
+#   NEXT_PUBLIC_SUPABASE_URL
+#   NEXT_PUBLIC_SUPABASE_ANON_KEY
+#   SUPABASE_SERVICE_ROLE_KEY        (mark as "secret" in the Netlify UI)
+#   NEXT_PUBLIC_SITE_URL             (https://app.keylinktransport.ca)
