@@ -17,7 +17,7 @@ export function AppShell({
       <AppTopbar profile={profile} notifications={notifications} />
       <div className="flex flex-1 flex-col lg:flex-row">
         <AppSidebar role={profile.role} />
-        <main className="flex flex-1 flex-col bg-background p-4 lg:p-8">
+        <main className="flex flex-1 flex-col bg-[#f4f6fa] p-4 lg:p-8">
           {children}
         </main>
       </div>

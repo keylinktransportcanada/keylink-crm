@@ -4,12 +4,16 @@ import {
   Activity,
   AlertTriangle,
   BadgeCheck,
+  Building2,
   CalendarClock,
+  ChevronRight,
   CircleCheck,
   CircleDollarSign,
   Clock,
+  Container,
   FileText,
   ListChecks,
+  Package,
   PackageCheck,
   Plus,
   TrendingUp,
@@ -318,6 +322,8 @@ async function DispatchView({
 
   return (
     <div className="flex flex-col gap-6">
+      <QuickActions />
+
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <OperationsChart
           series={series}
@@ -967,6 +973,80 @@ function Eyebrow({ children }: { children: React.ReactNode }) {
       <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
         {children}
       </span>
+    </div>
+  )
+}
+
+const QUICK_ACTIONS: Array<{
+  href: string
+  icon: LucideIcon
+  title: string
+  description: string
+}> = [
+  {
+    href: "/loads/new",
+    icon: Package,
+    title: "Create load",
+    description: "Add a new shipment and assign it to a driver",
+  },
+  {
+    href: "/customers",
+    icon: Building2,
+    title: "Add customer",
+    description: "Register a shipper or receiver for billing",
+  },
+  {
+    href: "/trucks/new",
+    icon: TruckIcon,
+    title: "Add truck",
+    description: "Register a power unit with compliance dates",
+  },
+  {
+    href: "/trailers",
+    icon: Container,
+    title: "Add trailer",
+    description: "Register a trailer and inspection schedule",
+  },
+]
+
+function QuickActions() {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {QUICK_ACTIONS.map((action) => {
+        const Icon = action.icon
+        return (
+          <Link
+            key={action.href}
+            href={action.href}
+            className={cn(
+              "group flex items-start gap-4 rounded-2xl border border-border/70 bg-card p-5",
+              "shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.10)]",
+              "transition-all hover:-translate-y-0.5 hover:border-brand-gold/40 hover:shadow-[0_4px_8px_rgba(18,41,74,0.06),0_16px_32px_-12px_rgba(18,41,74,0.18)]",
+            )}
+          >
+            <span
+              className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-gold/15 text-brand-gold transition-colors group-hover:bg-brand-gold/25"
+              aria-hidden="true"
+            >
+              <Icon className="size-5" />
+            </span>
+            <div className="flex flex-1 flex-col gap-1">
+              <div className="flex items-start justify-between gap-2">
+                <h3 className="text-sm font-semibold text-brand-navy">
+                  {action.title}
+                </h3>
+                <ChevronRight
+                  className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-brand-gold"
+                  aria-hidden="true"
+                />
+              </div>
+              <p className="text-xs leading-relaxed text-muted-foreground">
+                {action.description}
+              </p>
+            </div>
+          </Link>
+        )
+      })}
     </div>
   )
 }
