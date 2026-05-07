@@ -205,7 +205,7 @@ async function DispatchView({
     { data: loads },
     { count: activeDriversCount },
     { count: availableTrucksCount },
-    { count: customersCount },
+    { data: customerRows, count: customersCount },
     employeesAgg,
     { data: deliveredEvents },
   ] = await Promise.all([
@@ -228,8 +228,13 @@ async function DispatchView({
       .eq("status", "active"),
     supabase
       .from("customers")
-      .select("id", { count: "exact", head: true })
-      .eq("active", true),
+      .select(
+        "id, name, contact_name, phone, payment_terms_days, credit_limit_cad",
+        { count: "exact" },
+      )
+      .eq("active", true)
+      .order("name", { ascending: true })
+      .limit(8),
     showEmployees
       ? supabase
           .from("profiles")
@@ -466,11 +471,10 @@ async function DispatchView({
         )}
       </section>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Tile
-          label="Customers"
-          value={customersCount ?? 0}
-          href="/customers"
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+        <CustomersCard
+          customers={customerRows ?? []}
+          total={customersCount ?? 0}
         />
         {showEmployees ? (
           <EmployeesTile
@@ -846,25 +850,113 @@ function EmployeesTile({ roles }: { roles: CurrentProfile["role"][] }) {
   )
 }
 
-function Tile({
-  label,
-  value,
-  href,
+type CustomerRow = {
+  id: string
+  name: string
+  contact_name: string | null
+  phone: string | null
+  payment_terms_days: number | null
+  credit_limit_cad: number | null
+}
+
+function CustomersCard({
+  customers,
+  total,
 }: {
-  label: string
-  value: number
-  href: string
+  customers: CustomerRow[]
+  total: number
 }) {
+  const remaining = Math.max(0, total - customers.length)
+
   return (
-    <Link
-      href={href}
-      className="flex items-center justify-between rounded-xl border border-border/70 bg-card p-5 hover:bg-muted/20"
-    >
-      <CardLabel>{label}</CardLabel>
-      <span className="font-display text-3xl tracking-wide text-brand-navy">
-        {value.toLocaleString()}
-      </span>
-    </Link>
+    <section className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-5 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span
+              className="size-1.5 rounded-full bg-brand-gold"
+              aria-hidden="true"
+            />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-slate">
+              Customers
+            </span>
+          </div>
+          <span className="font-display text-2xl tracking-wide tabular-nums text-brand-navy">
+            {total.toLocaleString()}
+          </span>
+        </div>
+        <Link
+          href="/customers"
+          className="text-xs font-medium text-brand-teal hover:underline"
+        >
+          View all →
+        </Link>
+      </div>
+
+      {customers.length === 0 ? (
+        <div className="rounded-md border border-dashed border-border bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
+          No active customers yet.
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full border-separate border-spacing-0 text-sm">
+            <thead>
+              <tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                <th className="border-b border-border px-2 py-2 text-left font-semibold">
+                  Customer
+                </th>
+                <th className="border-b border-border px-2 py-2 text-left font-semibold">
+                  Phone
+                </th>
+                <th className="border-b border-border px-2 py-2 text-right font-semibold">
+                  Terms
+                </th>
+                <th className="border-b border-border px-2 py-2 text-right font-semibold">
+                  Credit limit
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {customers.map((c) => (
+                <tr key={c.id} className="align-top">
+                  <td className="border-b border-border/50 px-2 py-2.5">
+                    <div className="flex flex-col leading-tight">
+                      <span className="font-medium">{c.name}</span>
+                      {c.contact_name ? (
+                        <span className="text-xs text-muted-foreground">
+                          {c.contact_name}
+                        </span>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td className="border-b border-border/50 px-2 py-2.5 text-muted-foreground tabular-nums">
+                    {c.phone ?? (
+                      <span className="text-muted-foreground/50">—</span>
+                    )}
+                  </td>
+                  <td className="border-b border-border/50 px-2 py-2.5 text-right tabular-nums">
+                    {c.payment_terms_days != null ? (
+                      `Net ${c.payment_terms_days}`
+                    ) : (
+                      <span className="text-muted-foreground/50">—</span>
+                    )}
+                  </td>
+                  <td className="border-b border-border/50 px-2 py-2.5 text-right tabular-nums">
+                    {formatCAD(c.credit_limit_cad)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {remaining > 0 ? (
+        <p className="text-[11px] text-muted-foreground">
+          + {remaining.toLocaleString()} more — see full list →
+        </p>
+      ) : null}
+    </section>
   )
 }
 
