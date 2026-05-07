@@ -22,6 +22,7 @@ export type Database = {
           employee_id: string | null
           hire_date: string | null
           active: boolean
+          avatar_url: string | null
           created_at: string
           updated_at: string
         }
@@ -33,6 +34,7 @@ export type Database = {
           employee_id?: string | null
           hire_date?: string | null
           active?: boolean
+          avatar_url?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -44,6 +46,7 @@ export type Database = {
           employee_id?: string | null
           hire_date?: string | null
           active?: boolean
+          avatar_url?: string | null
           created_at?: string
           updated_at?: string
         }

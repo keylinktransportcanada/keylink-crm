@@ -9,7 +9,13 @@ export type Role = AppRole
 
 export type CurrentProfile = Pick<
   Tables<"profiles">,
-  "id" | "role" | "full_name" | "phone" | "employee_id" | "active"
+  | "id"
+  | "role"
+  | "full_name"
+  | "phone"
+  | "employee_id"
+  | "active"
+  | "avatar_url"
 >
 
 export async function getCurrentProfile(): Promise<CurrentProfile | null> {
@@ -21,7 +27,7 @@ export async function getCurrentProfile(): Promise<CurrentProfile | null> {
 
   const { data } = await supabase
     .from("profiles")
-    .select("id, role, full_name, phone, employee_id, active")
+    .select("id, role, full_name, phone, employee_id, active, avatar_url")
     .eq("id", user.id)
     .single()
 

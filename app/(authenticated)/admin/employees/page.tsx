@@ -7,7 +7,9 @@ export default async function EmployeesPage() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, employee_id, role, phone, active, created_at")
+    .select(
+      "id, full_name, employee_id, role, phone, active, avatar_url, created_at",
+    )
     .order("created_at", { ascending: false })
 
   const employees: EmployeeRow[] = data ?? []

@@ -15,6 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { RoleBadge } from "@/components/shared/role-badge"
+import { UserAvatar } from "@/components/shared/user-avatar"
 import { type ROLE_VALUES } from "@/lib/schemas/employees"
 
 import { setEmployeeActive } from "./actions"
@@ -27,6 +28,7 @@ export type EmployeeRow = {
   role: (typeof ROLE_VALUES)[number]
   phone: string | null
   active: boolean
+  avatar_url: string | null
   created_at: string
 }
 
@@ -86,7 +88,16 @@ export function EmployeesTable({
               employees.map((e) => (
                 <TableRow key={e.id} className={!e.active ? "opacity-60" : ""}>
                   <TableCell className="font-medium">
-                    {e.full_name || "—"}
+                    <div className="flex items-center gap-3">
+                      <UserAvatar
+                        url={e.avatar_url}
+                        seed={e.id}
+                        name={e.full_name}
+                        size="sm"
+                        className="ring-border/60"
+                      />
+                      <span>{e.full_name || "Unnamed"}</span>
+                    </div>
                   </TableCell>
                   <TableCell className="font-mono text-xs">
                     {e.employee_id ?? "—"}
