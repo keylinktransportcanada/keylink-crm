@@ -54,7 +54,10 @@ export function AppSidebar({ role }: { role: Role }) {
           positioned within it and grows wider on hover, overlaying content
           rather than pushing it. */}
       <div className="relative z-40 hidden w-16 shrink-0 lg:block">
-        <div className="sticky top-0 h-screen relative w-16">
+        {/* Height = viewport minus topbar (~3.5rem) so the nav stops at the
+            viewport edge and the version footer never gets clipped offscreen
+            at scroll-top. dvh adapts to mobile browser chrome too. */}
+        <div className="sticky top-0 relative w-16 h-[calc(100dvh-3.5rem)]">
         <nav
           aria-label="Primary"
           className={cn(
