@@ -2,6 +2,7 @@ import {
   Building2,
   Container,
   LayoutDashboard,
+  Package,
   Truck,
   Users,
   type LucideIcon,
@@ -21,6 +22,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+    roles: ["admin", "dispatcher", "driver", "accounting"],
+  },
+  {
+    label: "Loads",
+    href: "/loads",
+    icon: Package,
     roles: ["admin", "dispatcher", "driver", "accounting"],
   },
   {
