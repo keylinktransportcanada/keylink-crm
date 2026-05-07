@@ -7,12 +7,39 @@ import { format, parseISO } from "date-fns"
 import {
   ArrowRight,
   Calendar,
+  FileText,
+  Image as ImageIcon,
   MapPin,
   Package,
   Search,
   Truck,
   User,
 } from "lucide-react"
+
+import {
+  LoadDocumentsDialog,
+  type LoadDocument,
+} from "@/components/loads/load-documents-viewer"
+import { DOCUMENT_TYPE_LABEL, type DocumentType } from "@/lib/schemas/documents"
+
+// Compact codes used inside the small preview-card thumbs. Keeps the bottom
+// strip readable at ~70px wide.
+const DOCUMENT_TYPE_CODE: Record<DocumentType, string> = {
+  bol: "BOL",
+  pod: "POD",
+  invoice: "INV",
+  rate_con: "RC",
+  customs: "CUS",
+  cci: "CCI",
+  inspection: "INS",
+  maintenance: "MNT",
+  driver_licence: "DL",
+  medical: "MED",
+  fast_card: "FAST",
+  insurance: "INS",
+  registration: "REG",
+  other: "DOC",
+}
 
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -45,6 +72,16 @@ import {
   LOAD_TYPE_LABEL,
 } from "@/lib/schemas/loads"
 
+export type LoadDocPreview = {
+  id: string
+  type: string
+  file_name: string
+  mime_type: string
+  size_bytes: number
+  uploaded_at: string
+  signed_url: string | null
+}
+
 export type LoadListRow = {
   id: string
   load_number: string
@@ -71,6 +108,7 @@ export type LoadListRow = {
   notes: string | null
   reference_number: string | null
   po_number: string | null
+  documents?: LoadDocPreview[]
 }
 
 const STATUS_TONE: Record<LoadListRow["status"], string> = {
@@ -235,6 +273,7 @@ export function LoadsTable({ loads }: { loads: LoadListRow[] }) {
               <TableHead>Origin → Destination</TableHead>
               <TableHead>Pickup</TableHead>
               <TableHead>Driver</TableHead>
+              <TableHead>Docs</TableHead>
               <TableHead className="text-right">Total (CAD)</TableHead>
             </TableRow>
           </TableHeader>
@@ -242,7 +281,7 @@ export function LoadsTable({ loads }: { loads: LoadListRow[] }) {
             {filtered.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={8}
                   className="py-10 text-center text-sm text-muted-foreground"
                 >
                   {loads.length === 0
@@ -319,6 +358,9 @@ export function LoadsTable({ loads }: { loads: LoadListRow[] }) {
                           unassigned
                         </span>
                       )}
+                    </TableCell>
+                    <TableCell>
+                      <DocsCell documents={l.documents ?? []} />
                     </TableCell>
                     <TableCell className="text-right font-medium">
                       {formatCAD(l.total_billed_cad)}
@@ -461,6 +503,24 @@ function LoadPreview({ load }: { load: LoadListRow }) {
             <span className="line-clamp-3 text-xs">{load.notes}</span>
           </div>
         ) : null}
+
+        {load.documents && load.documents.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">
+                Documents
+              </span>
+              <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-semibold tabular-nums opacity-70">
+                {load.documents.length}
+              </span>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {load.documents.slice(0, 4).map((d) => (
+                <DocThumb key={d.id} doc={d} />
+              ))}
+            </div>
+          </div>
+        ) : null}
       </div>
 
       <div className="flex items-center justify-end gap-2 border-t border-white/10 bg-white/5 px-4 py-2">
@@ -477,6 +537,143 @@ function LoadPreview({ load }: { load: LoadListRow }) {
         </Link>
       </div>
     </div>
+  )
+}
+
+function DocsCell({ documents }: { documents: LoadDocPreview[] }) {
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
+
+  if (documents.length === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>
+  }
+
+  // Show up to 3 thumbnails inline, plus a "+N" chip if there are more.
+  const visible = documents.slice(0, 3)
+  const overflow = documents.length - visible.length
+
+  // Cast to LoadDocument[] — LoadDocPreview is the same shape with a string
+  // type, but the dialog expects the typed enum. Document types come from a
+  // trusted server insert that was already enum-validated.
+  const docsForDialog = documents as unknown as LoadDocument[]
+
+  return (
+    <>
+      <div
+        className="flex items-center gap-1.5"
+        onClick={(e) => e.stopPropagation()}
+        role="presentation"
+      >
+        {visible.map((d, i) => (
+          <DocsCellThumb
+            key={d.id}
+            doc={d}
+            onOpen={() => setOpenIndex(i)}
+          />
+        ))}
+        {overflow > 0 ? (
+          <button
+            type="button"
+            onClick={() => setOpenIndex(visible.length)}
+            className="flex size-9 items-center justify-center rounded-md border border-border bg-muted text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+            aria-label={`${overflow} more documents`}
+          >
+            +{overflow}
+          </button>
+        ) : null}
+      </div>
+
+      <LoadDocumentsDialog
+        documents={docsForDialog}
+        openIndex={openIndex}
+        onClose={() => setOpenIndex(null)}
+        onIndexChange={setOpenIndex}
+      />
+    </>
+  )
+}
+
+function DocsCellThumb({
+  doc,
+  onOpen,
+}: {
+  doc: LoadDocPreview
+  onOpen: () => void
+}) {
+  const isImg = doc.mime_type.startsWith("image/")
+  const label = DOCUMENT_TYPE_LABEL[doc.type as DocumentType] ?? doc.type
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      title={`${label} · ${doc.file_name}`}
+      aria-label={`Open ${label}: ${doc.file_name}`}
+      className={cn(
+        "flex size-9 items-center justify-center overflow-hidden rounded-md border border-border bg-muted/50",
+        "transition-colors hover:border-foreground/30 hover:bg-muted",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-light",
+      )}
+    >
+      {isImg && doc.signed_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={doc.signed_url}
+          alt=""
+          className="size-full object-cover"
+          loading="lazy"
+        />
+      ) : isImg ? (
+        <ImageIcon className="size-4 text-muted-foreground" />
+      ) : (
+        <FileText className="size-4 text-muted-foreground" />
+      )}
+    </button>
+  )
+}
+
+function DocThumb({ doc }: { doc: LoadDocPreview }) {
+  const isImg = doc.mime_type.startsWith("image/")
+  const fullLabel = DOCUMENT_TYPE_LABEL[doc.type as DocumentType] ?? doc.type
+  const code = DOCUMENT_TYPE_CODE[doc.type as DocumentType] ?? "DOC"
+  const Inner = (
+    <div
+      className={cn(
+        "group relative flex aspect-[3/4] flex-col overflow-hidden rounded-lg border border-white/10 bg-white/5",
+        "transition-all hover:-translate-y-0.5 hover:border-brand-gold/40 hover:bg-white/10 hover:shadow-[0_4px_12px_-2px_rgba(10,14,26,0.4)]",
+      )}
+      title={`${fullLabel} · ${doc.file_name}`}
+    >
+      <div className="flex flex-1 items-center justify-center bg-gradient-to-br from-white/5 to-transparent">
+        {isImg && doc.signed_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={doc.signed_url}
+            alt=""
+            className="size-full object-cover"
+            loading="lazy"
+          />
+        ) : isImg ? (
+          <ImageIcon className="size-5 text-brand-cloud/60" />
+        ) : (
+          <FileText className="size-5 text-brand-cloud/60" />
+        )}
+      </div>
+      <span className="border-t border-white/10 bg-brand-midnight/85 px-1 py-1 text-center text-[9px] font-bold uppercase tracking-wider text-brand-cloud">
+        {code}
+      </span>
+    </div>
+  )
+  return doc.signed_url ? (
+    <a
+      href={doc.signed_url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      className="block"
+    >
+      {Inner}
+    </a>
+  ) : (
+    Inner
   )
 }
 
