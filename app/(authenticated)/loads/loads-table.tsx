@@ -129,7 +129,18 @@ export function LoadsTable({ loads }: { loads: LoadListRow[] }) {
           onValueChange={(v) => setStatusFilter(v ?? "active")}
         >
           <SelectTrigger className="w-[200px]">
-            <SelectValue />
+            <SelectValue>
+              {(v: string | null) => {
+                if (v === "active") return "Active loads"
+                if (v === "all") return "All statuses"
+                if (v && v in LOAD_STATUS_LABEL) {
+                  return LOAD_STATUS_LABEL[
+                    v as keyof typeof LOAD_STATUS_LABEL
+                  ]
+                }
+                return v ?? ""
+              }}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="active">Active loads</SelectItem>

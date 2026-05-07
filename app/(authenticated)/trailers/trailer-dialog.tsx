@@ -150,7 +150,15 @@ export function TrailerDialog({
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue />
+                          <SelectValue>
+                            {(v: string | null) =>
+                              v
+                                ? TRAILER_TYPE_LABEL[
+                                    v as keyof typeof TRAILER_TYPE_LABEL
+                                  ] ?? v
+                                : ""
+                            }
+                          </SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -177,7 +185,15 @@ export function TrailerDialog({
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue />
+                          <SelectValue>
+                            {(v: string | null) =>
+                              v
+                                ? EQUIPMENT_STATUS_LABEL[
+                                    v as keyof typeof EQUIPMENT_STATUS_LABEL
+                                  ] ?? v
+                                : ""
+                            }
+                          </SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>

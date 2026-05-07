@@ -36,6 +36,12 @@ import {
 
 import { createLoad, updateLoad } from "./actions"
 
+const COUNTRY_LABEL: Record<"CA" | "US" | "MX", string> = {
+  CA: "Canada",
+  US: "United States",
+  MX: "Mexico",
+}
+
 export type LoadFormOptions = {
   customers: Array<{ id: string; name: string; active: boolean }>
   drivers: Array<{ id: string; full_name: string }>
@@ -164,7 +170,14 @@ export function LoadForm({
                 >
                   <FormControl>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Pick a customer…" />
+                      <SelectValue placeholder="Pick a customer…">
+                        {(v: string | null) =>
+                          v
+                            ? options.customers.find((c) => c.id === v)?.name ??
+                              "—"
+                            : "Pick a customer…"
+                        }
+                      </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -292,7 +305,12 @@ export function LoadForm({
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue />
+                        <SelectValue>
+                          {(v: string | null) =>
+                            COUNTRY_LABEL[(v ?? "CA") as keyof typeof COUNTRY_LABEL] ??
+                            v
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -375,7 +393,12 @@ export function LoadForm({
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue />
+                        <SelectValue>
+                          {(v: string | null) =>
+                            COUNTRY_LABEL[(v ?? "CA") as keyof typeof COUNTRY_LABEL] ??
+                            v
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -440,7 +463,14 @@ export function LoadForm({
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue />
+                        <SelectValue>
+                          {(v: string | null) =>
+                            !v || v === "_unassigned"
+                              ? "Unassigned"
+                              : options.drivers.find((d) => d.id === v)
+                                  ?.full_name || "Unnamed"
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -470,7 +500,14 @@ export function LoadForm({
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue />
+                        <SelectValue>
+                          {(v: string | null) =>
+                            !v || v === "_unassigned"
+                              ? "Unassigned"
+                              : options.trucks.find((t) => t.id === v)
+                                  ?.truck_number ?? "—"
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -500,7 +537,14 @@ export function LoadForm({
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue />
+                        <SelectValue>
+                          {(v: string | null) =>
+                            !v || v === "_unassigned"
+                              ? "Unassigned"
+                              : options.trailers.find((t) => t.id === v)
+                                  ?.trailer_number ?? "—"
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -534,7 +578,14 @@ export function LoadForm({
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue />
+                        <SelectValue>
+                          {(v: string | null) =>
+                            v
+                              ? LOAD_TYPE_LABEL[v as keyof typeof LOAD_TYPE_LABEL] ??
+                                v
+                              : ""
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
@@ -561,7 +612,15 @@ export function LoadForm({
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
-                        <SelectValue />
+                        <SelectValue>
+                          {(v: string | null) =>
+                            v
+                              ? EQUIPMENT_REQUIRED_LABEL[
+                                  v as keyof typeof EQUIPMENT_REQUIRED_LABEL
+                                ] ?? v
+                              : ""
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

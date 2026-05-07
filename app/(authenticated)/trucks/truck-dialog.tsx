@@ -220,7 +220,15 @@ export function TruckDialog({
                     >
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue />
+                          <SelectValue>
+                            {(v: string | null) =>
+                              v
+                                ? EQUIPMENT_STATUS_LABEL[
+                                    v as keyof typeof EQUIPMENT_STATUS_LABEL
+                                  ] ?? v
+                                : ""
+                            }
+                          </SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
