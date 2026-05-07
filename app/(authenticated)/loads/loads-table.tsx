@@ -2,11 +2,26 @@
 
 import { useMemo, useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { format, parseISO } from "date-fns"
-import { Search } from "lucide-react"
+import {
+  ArrowRight,
+  Calendar,
+  MapPin,
+  Package,
+  Search,
+  Truck,
+  User,
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
+import { buttonVariants } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  PreviewCard,
+  PreviewCardContent,
+  PreviewCardTrigger,
+} from "@/components/ui/preview-card"
 import {
   Table,
   TableBody,
@@ -24,8 +39,10 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import {
+  EQUIPMENT_REQUIRED_LABEL,
   LOAD_STATUS_LABEL,
   LOAD_STATUS_VALUES,
+  LOAD_TYPE_LABEL,
 } from "@/lib/schemas/loads"
 
 export type LoadListRow = {
@@ -34,14 +51,26 @@ export type LoadListRow = {
   status: (typeof LOAD_STATUS_VALUES)[number]
   pickup_date: string | null
   delivery_date: string | null
+  origin_company: string | null
   origin_city: string | null
   origin_province: string | null
+  origin_country: string | null
+  destination_company: string | null
   destination_city: string | null
   destination_province: string | null
+  destination_country: string | null
   total_billed_cad: number | null
   customer_name: string | null
   driver_name: string | null
+  truck_number: string | null
+  trailer_number: string | null
   is_cross_border: boolean
+  load_type: string
+  commodity: string | null
+  equipment_required: string | null
+  notes: string | null
+  reference_number: string | null
+  po_number: string | null
 }
 
 const STATUS_TONE: Record<LoadListRow["status"], string> = {
@@ -77,6 +106,17 @@ const formatLocation = (
   return city ?? province ?? "—"
 }
 
+const formatLocationFull = (
+  company: string | null,
+  city: string | null,
+  province: string | null,
+  country: string | null,
+): string => {
+  const tail = [city, province, country].filter(Boolean).join(", ")
+  if (company && tail) return `${company} · ${tail}`
+  return company ?? tail ?? "—"
+}
+
 const formatDate = (iso: string | null) => {
   if (!iso) return "—"
   try {
@@ -86,7 +126,17 @@ const formatDate = (iso: string | null) => {
   }
 }
 
+const formatDateLong = (iso: string | null) => {
+  if (!iso) return "—"
+  try {
+    return format(parseISO(iso), "PPP")
+  } catch {
+    return iso
+  }
+}
+
 export function LoadsTable({ loads }: { loads: LoadListRow[] }) {
+  const router = useRouter()
   const [filter, setFilter] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("active")
 
@@ -111,6 +161,8 @@ export function LoadsTable({ loads }: { loads: LoadListRow[] }) {
       )
     })
   }, [loads, filter, statusFilter])
+
+  const navigateTo = (id: string) => router.push(`/loads/${id}`)
 
   return (
     <>
@@ -181,62 +233,275 @@ export function LoadsTable({ loads }: { loads: LoadListRow[] }) {
               </TableRow>
             ) : (
               filtered.map((l) => (
-                <TableRow key={l.id} className="cursor-pointer hover:bg-muted/40">
-                  <TableCell className="font-mono font-medium">
-                    <Link href={`/loads/${l.id}`} className="hover:underline">
-                      {l.load_number}
-                    </Link>
-                    {l.is_cross_border ? (
-                      <span
-                        className="ml-2 rounded-sm bg-brand-teal/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-brand-teal-light"
-                        title="Cross-border"
+                <PreviewCard key={l.id}>
+                  <PreviewCardTrigger
+                    delay={350}
+                    closeDelay={120}
+                    render={
+                      <TableRow
+                        tabIndex={0}
+                        onClick={() => navigateTo(l.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault()
+                            navigateTo(l.id)
+                          }
+                        }}
+                        className="cursor-pointer transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
+                      />
+                    }
+                  >
+                    <TableCell className="font-mono font-medium">
+                      <Link
+                        href={`/loads/${l.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="hover:underline"
                       >
-                        CB
+                        {l.load_number}
+                      </Link>
+                      {l.is_cross_border ? (
+                        <span
+                          className="ml-2 rounded-sm bg-brand-teal/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-brand-teal-light"
+                          title="Cross-border"
+                        >
+                          CB
+                        </span>
+                      ) : null}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={cn(
+                          "border-transparent",
+                          STATUS_TONE[l.status],
+                        )}
+                      >
+                        {LOAD_STATUS_LABEL[l.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>{l.customer_name ?? "—"}</TableCell>
+                    <TableCell className="text-sm">
+                      <span>
+                        {formatLocation(l.origin_city, l.origin_province)}
                       </span>
-                    ) : null}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      className={cn(
-                        "border-transparent",
-                        STATUS_TONE[l.status],
-                      )}
-                    >
-                      {LOAD_STATUS_LABEL[l.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{l.customer_name ?? "—"}</TableCell>
-                  <TableCell className="text-sm">
-                    <span>
-                      {formatLocation(l.origin_city, l.origin_province)}
-                    </span>
-                    <span className="text-muted-foreground"> → </span>
-                    <span>
-                      {formatLocation(
-                        l.destination_city,
-                        l.destination_province,
-                      )}
-                    </span>
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {formatDate(l.pickup_date)}
-                  </TableCell>
-                  <TableCell className="text-sm">
-                    {l.driver_name ?? (
-                      <span className="text-muted-foreground italic">
-                        unassigned
+                      <span className="text-muted-foreground"> → </span>
+                      <span>
+                        {formatLocation(
+                          l.destination_city,
+                          l.destination_province,
+                        )}
                       </span>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-right font-medium">
-                    {formatCAD(l.total_billed_cad)}
-                  </TableCell>
-                </TableRow>
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {formatDate(l.pickup_date)}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      {l.driver_name ?? (
+                        <span className="text-muted-foreground italic">
+                          unassigned
+                        </span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatCAD(l.total_billed_cad)}
+                    </TableCell>
+                  </PreviewCardTrigger>
+                  <PreviewCardContent
+                    side="left"
+                    align="start"
+                    sideOffset={16}
+                    className="w-[360px]"
+                  >
+                    <LoadPreview load={l} />
+                  </PreviewCardContent>
+                </PreviewCard>
               ))
             )}
           </TableBody>
         </Table>
       </div>
     </>
+  )
+}
+
+function LoadPreview({ load }: { load: LoadListRow }) {
+  return (
+    <div className="flex flex-col">
+      <div className="flex items-start justify-between gap-3 border-b border-border bg-muted/30 px-4 py-3">
+        <div className="flex flex-col gap-1">
+          <span className="font-mono text-sm font-semibold tracking-tight">
+            {load.load_number}
+          </span>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Badge
+              className={cn(
+                "border-transparent",
+                STATUS_TONE[load.status],
+              )}
+            >
+              {LOAD_STATUS_LABEL[load.status]}
+            </Badge>
+            {load.is_cross_border ? (
+              <Badge className="border-transparent bg-brand-teal/20 text-[10px] font-semibold uppercase tracking-wider text-brand-teal-light">
+                Cross-border
+              </Badge>
+            ) : null}
+          </div>
+        </div>
+        <span className="text-right font-display text-lg tracking-wide text-brand-navy">
+          {formatCAD(load.total_billed_cad)}
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-3 px-4 py-3">
+        <div className="flex flex-col gap-2 text-xs">
+          <Row icon={<MapPin className="size-3.5" />} label="Customer">
+            <span className="font-medium text-foreground">
+              {load.customer_name ?? "—"}
+            </span>
+          </Row>
+          <Row icon={<MapPin className="size-3.5" />} label="Origin">
+            <span className="text-foreground">
+              {formatLocationFull(
+                load.origin_company,
+                load.origin_city,
+                load.origin_province,
+                load.origin_country,
+              )}
+            </span>
+          </Row>
+          <Row icon={<ArrowRight className="size-3.5" />} label="Destination">
+            <span className="text-foreground">
+              {formatLocationFull(
+                load.destination_company,
+                load.destination_city,
+                load.destination_province,
+                load.destination_country,
+              )}
+            </span>
+          </Row>
+        </div>
+
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+          <Field
+            icon={<Calendar className="size-3.5" />}
+            label="Pickup"
+            value={formatDateLong(load.pickup_date)}
+          />
+          <Field
+            icon={<Calendar className="size-3.5" />}
+            label="Delivery"
+            value={formatDateLong(load.delivery_date)}
+          />
+          <Field
+            icon={<User className="size-3.5" />}
+            label="Driver"
+            value={load.driver_name}
+            empty="unassigned"
+          />
+          <Field
+            icon={<Truck className="size-3.5" />}
+            label="Truck"
+            value={load.truck_number}
+            empty="unassigned"
+          />
+          <Field
+            icon={<Package className="size-3.5" />}
+            label="Type"
+            value={
+              LOAD_TYPE_LABEL[load.load_type as keyof typeof LOAD_TYPE_LABEL] ??
+              load.load_type
+            }
+          />
+          <Field
+            icon={<Package className="size-3.5" />}
+            label="Equipment"
+            value={
+              load.equipment_required
+                ? EQUIPMENT_REQUIRED_LABEL[
+                    load.equipment_required as keyof typeof EQUIPMENT_REQUIRED_LABEL
+                  ] ?? load.equipment_required
+                : "—"
+            }
+          />
+        </div>
+
+        {load.commodity ? (
+          <div className="flex flex-col gap-0.5 rounded-md bg-muted/30 px-2.5 py-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Commodity
+            </span>
+            <span className="text-xs">{load.commodity}</span>
+          </div>
+        ) : null}
+
+        {load.notes ? (
+          <div className="flex flex-col gap-0.5 rounded-md bg-muted/30 px-2.5 py-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Notes
+            </span>
+            <span className="line-clamp-3 text-xs">{load.notes}</span>
+          </div>
+        ) : null}
+      </div>
+
+      <div className="flex items-center justify-end gap-2 border-t border-border bg-muted/20 px-4 py-2">
+        <Link
+          href={`/loads/${load.id}`}
+          className={cn(buttonVariants({ size: "sm" }))}
+          onClick={(e) => e.stopPropagation()}
+        >
+          Open load
+          <ArrowRight />
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+function Row({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-0.5 text-muted-foreground">{icon}</span>
+      <div className="flex flex-1 flex-col gap-0.5">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function Field({
+  icon,
+  label,
+  value,
+  empty = "—",
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string | null | undefined
+  empty?: string
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-0.5 text-muted-foreground">{icon}</span>
+      <div className="flex flex-1 flex-col gap-0.5 leading-tight">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          {label}
+        </span>
+        <span className="text-foreground">
+          {value ? value : <span className="text-muted-foreground">{empty}</span>}
+        </span>
+      </div>
+    </div>
   )
 }
