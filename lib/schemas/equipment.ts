@@ -40,6 +40,10 @@ export const TRAILER_TYPE_LABEL: Record<
 
 const currentYear = new Date().getFullYear()
 
+const dateOrEmpty = z.string().regex(/^\d{4}-\d{2}-\d{2}$|^$/, {
+  message: "Use YYYY-MM-DD.",
+})
+
 export const truckSchema = z.object({
   truck_number: z
     .string()
@@ -54,6 +58,32 @@ export const truckSchema = z.object({
     .max(currentYear + 2)
     .nullable(),
   status: z.enum(EQUIPMENT_STATUS_VALUES),
+
+  // Identity / registration
+  plate: z.string().max(20),
+  plate_province: z.string().max(40),
+  plate_expiry: dateOrEmpty,
+  vin: z.string().max(40),
+  current_odometer_km: z
+    .number({ message: "Must be a number." })
+    .int()
+    .min(0)
+    .max(10_000_000)
+    .nullable(),
+
+  // Compliance
+  insurance_policy: z.string().max(80),
+  insurance_expiry: dateOrEmpty,
+  ifta_decal_year: z
+    .number({ message: "Must be a number." })
+    .int()
+    .min(2000)
+    .max(currentYear + 2)
+    .nullable(),
+  ifta_decal_expiry: dateOrEmpty,
+  safety_sticker_expiry: dateOrEmpty,
+  cvor_certificate_expiry: dateOrEmpty,
+
   notes: z.string().max(2000),
 })
 
@@ -72,6 +102,14 @@ export const trailerSchema = z.object({
     .max(40),
   type: z.enum(TRAILER_TYPE_VALUES),
   status: z.enum(EQUIPMENT_STATUS_VALUES),
+
+  plate: z.string().max(20),
+  plate_province: z.string().max(40),
+  plate_expiry: dateOrEmpty,
+  vin: z.string().max(40),
+  last_inspection_date: dateOrEmpty,
+  next_inspection_due: dateOrEmpty,
+
   notes: z.string().max(2000),
 })
 

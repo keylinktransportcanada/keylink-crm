@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
-import { Pencil, Plus } from "lucide-react"
+import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { format, parseISO } from "date-fns"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -18,8 +18,12 @@ import {
   EQUIPMENT_STATUS_LABEL,
   type EQUIPMENT_STATUS_VALUES,
 } from "@/lib/schemas/equipment"
-
-import { TruckDialog } from "./truck-dialog"
+import {
+  nextExpiry,
+  relativeExpiryLabel,
+  SEVERITY_TONE,
+  todayInToronto,
+} from "@/lib/expiry"
 
 export type TruckRow = {
   id: string
@@ -28,6 +32,13 @@ export type TruckRow = {
   model: string | null
   year: number | null
   status: (typeof EQUIPMENT_STATUS_VALUES)[number]
+  plate: string | null
+  plate_province: string | null
+  plate_expiry: string | null
+  insurance_expiry: string | null
+  ifta_decal_expiry: string | null
+  safety_sticker_expiry: string | null
+  cvor_certificate_expiry: string | null
   notes: string | null
 }
 
@@ -38,62 +49,66 @@ const STATUS_TONE: Record<TruckRow["status"], string> = {
   retired: "bg-muted text-muted-foreground",
 }
 
-export function TrucksTable({
-  trucks,
-  canEdit,
-}: {
-  trucks: TruckRow[]
-  canEdit: boolean
-}) {
-  const [editing, setEditing] = useState<TruckRow | null>(null)
-  const [adding, setAdding] = useState(false)
+export function TrucksTable({ trucks }: { trucks: TruckRow[] }) {
+  const router = useRouter()
+  const today = todayInToronto()
+
+  const navigateTo = (id: string) => router.push(`/trucks/${id}`)
 
   return (
-    <>
-      {canEdit ? (
-        <div className="flex justify-end">
-          <Button size="sm" onClick={() => setAdding(true)}>
-            <Plus />
-            Add Truck
-          </Button>
-        </div>
-      ) : null}
-
-      <div className="overflow-x-auto rounded-lg border border-border">
-        <Table>
-          <TableHeader>
+    <div className="overflow-x-auto rounded-lg border border-border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Truck #</TableHead>
+            <TableHead>Make / Model</TableHead>
+            <TableHead>Year</TableHead>
+            <TableHead>Plate</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Next expiry</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {trucks.length === 0 ? (
             <TableRow>
-              <TableHead>Truck #</TableHead>
-              <TableHead>Make / Model</TableHead>
-              <TableHead>Year</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Notes</TableHead>
-              {canEdit ? (
-                <TableHead className="text-right">Actions</TableHead>
-              ) : null}
+              <TableCell
+                colSpan={6}
+                className="py-10 text-center text-sm text-muted-foreground"
+              >
+                No trucks yet. Click <strong>Add Truck</strong> to register
+                your fleet.
+              </TableCell>
             </TableRow>
-          </TableHeader>
-          <TableBody>
-            {trucks.length === 0 ? (
-              <TableRow>
-                <TableCell
-                  colSpan={canEdit ? 6 : 5}
-                  className="py-10 text-center text-sm text-muted-foreground"
+          ) : (
+            trucks.map((t) => {
+              const expiry = nextExpiry(today, [
+                { label: "Plate", date: t.plate_expiry },
+                { label: "Insurance", date: t.insurance_expiry },
+                { label: "IFTA decal", date: t.ifta_decal_expiry },
+                { label: "Safety sticker", date: t.safety_sticker_expiry },
+                { label: "CVOR cert", date: t.cvor_certificate_expiry },
+              ])
+              return (
+                <TableRow
+                  key={t.id}
+                  tabIndex={0}
+                  onClick={() => navigateTo(t.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault()
+                      navigateTo(t.id)
+                    }
+                  }}
+                  className="cursor-pointer transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
                 >
-                  No trucks yet.
-                  {canEdit ? (
-                    <>
-                      {" "}
-                      Click <strong>Add Truck</strong> to register your fleet.
-                    </>
-                  ) : null}
-                </TableCell>
-              </TableRow>
-            ) : (
-              trucks.map((t) => (
-                <TableRow key={t.id}>
                   <TableCell className="font-mono font-medium">
-                    {t.truck_number}
+                    <Link
+                      href={`/trucks/${t.id}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="hover:underline"
+                    >
+                      {t.truck_number}
+                    </Link>
                   </TableCell>
                   <TableCell>
                     {t.make || t.model ? (
@@ -105,6 +120,11 @@ export function TrucksTable({
                     )}
                   </TableCell>
                   <TableCell>{t.year ?? "—"}</TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {t.plate
+                      ? `${t.plate}${t.plate_province ? ` (${t.plate_province})` : ""}`
+                      : "—"}
+                  </TableCell>
                   <TableCell>
                     <Badge
                       className={cn(
@@ -115,40 +135,38 @@ export function TrucksTable({
                       {EQUIPMENT_STATUS_LABEL[t.status]}
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
-                    {t.notes ?? "—"}
+                  <TableCell>
+                    {expiry ? (
+                      <div className="flex flex-col gap-0.5">
+                        <span
+                          className={cn(
+                            "inline-flex w-fit items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-semibold",
+                            SEVERITY_TONE[expiry.severity],
+                          )}
+                        >
+                          {expiry.label}
+                          <span className="opacity-70">
+                            {expiry.severity === "expired"
+                              ? `expired ${relativeExpiryLabel(expiry.daysUntil)}`
+                              : relativeExpiryLabel(expiry.daysUntil)}
+                          </span>
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          {format(parseISO(expiry.date), "MMM d, yyyy")}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">
+                        no dates set
+                      </span>
+                    )}
                   </TableCell>
-                  {canEdit ? (
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setEditing(t)}
-                      >
-                        <Pencil className="size-3.5" /> Edit
-                      </Button>
-                    </TableCell>
-                  ) : null}
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </div>
-
-      <TruckDialog mode="create" open={adding} onOpenChange={setAdding} />
-
-      {editing ? (
-        <TruckDialog
-          key={editing.id}
-          mode="edit"
-          truck={editing}
-          open={!!editing}
-          onOpenChange={(o) => {
-            if (!o) setEditing(null)
-          }}
-        />
-      ) : null}
-    </>
+              )
+            })
+          )}
+        </TableBody>
+      </Table>
+    </div>
   )
 }

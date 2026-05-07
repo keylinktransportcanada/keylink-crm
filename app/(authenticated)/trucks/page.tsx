@@ -1,3 +1,7 @@
+import Link from "next/link"
+import { Plus } from "lucide-react"
+
+import { buttonVariants } from "@/components/ui/button"
 import { requireRole } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/server"
 
@@ -10,7 +14,11 @@ export default async function TrucksPage() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("trucks")
-    .select("id, truck_number, make, model, year, status, notes")
+    .select(
+      `id, truck_number, make, model, year, status, plate, plate_province,
+       plate_expiry, insurance_expiry, ifta_decal_expiry,
+       safety_sticker_expiry, cvor_certificate_expiry, notes`,
+    )
     .order("truck_number", { ascending: true })
 
   const trucks: TruckRow[] = data ?? []
@@ -21,10 +29,19 @@ export default async function TrucksPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Trucks</h1>
           <p className="text-sm text-muted-foreground">
-            The fleet that pulls loads. Phase 3 adds plate, insurance, IFTA,
-            and CVOR tracking with expiry alerts.
+            Plates, insurance, IFTA decals, safety stickers, and CVOR
+            certificates. Click a truck to see the full record.
           </p>
         </div>
+        {canEdit ? (
+          <Link
+            href="/trucks/new"
+            className={buttonVariants({ size: "sm" })}
+          >
+            <Plus />
+            Add Truck
+          </Link>
+        ) : null}
       </header>
 
       {error ? (
@@ -32,7 +49,7 @@ export default async function TrucksPage() {
           Couldn&apos;t load trucks: {error.message}
         </div>
       ) : (
-        <TrucksTable trucks={trucks} canEdit={canEdit} />
+        <TrucksTable trucks={trucks} />
       )}
     </div>
   )

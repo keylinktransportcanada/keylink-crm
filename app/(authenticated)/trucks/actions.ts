@@ -21,6 +21,20 @@ function toRow(input: TruckInput) {
     model: input.model || null,
     year: input.year,
     status: input.status,
+
+    plate: input.plate || null,
+    plate_province: input.plate_province || null,
+    plate_expiry: input.plate_expiry || null,
+    vin: input.vin || null,
+    current_odometer_km: input.current_odometer_km,
+
+    insurance_policy: input.insurance_policy || null,
+    insurance_expiry: input.insurance_expiry || null,
+    ifta_decal_year: input.ifta_decal_year,
+    ifta_decal_expiry: input.ifta_decal_expiry || null,
+    safety_sticker_expiry: input.safety_sticker_expiry || null,
+    cvor_certificate_expiry: input.cvor_certificate_expiry || null,
+
     notes: input.notes || null,
   }
 }
@@ -67,5 +81,6 @@ export async function updateTruck(input: UpdateTruckInput): Promise<Result> {
   }
 
   revalidatePath("/trucks")
+  revalidatePath(`/trucks/${parsed.data.id}`)
   return { ok: true, id: parsed.data.id }
 }
