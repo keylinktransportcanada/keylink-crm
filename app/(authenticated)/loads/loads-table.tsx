@@ -505,21 +505,7 @@ function LoadPreview({ load }: { load: LoadListRow }) {
         ) : null}
 
         {load.documents && load.documents.length > 0 ? (
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">
-                Documents
-              </span>
-              <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-semibold tabular-nums opacity-70">
-                {load.documents.length}
-              </span>
-            </div>
-            <div className="grid grid-cols-4 gap-2">
-              {load.documents.slice(0, 4).map((d) => (
-                <DocThumb key={d.id} doc={d} />
-              ))}
-            </div>
-          </div>
+          <DocsSection documents={load.documents} />
         ) : null}
       </div>
 
@@ -630,15 +616,64 @@ function DocsCellThumb({
   )
 }
 
-function DocThumb({ doc }: { doc: LoadDocPreview }) {
+function DocsSection({ documents }: { documents: LoadDocPreview[] }) {
+  const [hoveredId, setHoveredId] = useState<string | null>(null)
+  const visible = documents.slice(0, 4)
+  const hovered = hoveredId
+    ? documents.find((d) => d.id === hoveredId) ?? null
+    : null
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center justify-between">
+        <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">
+          Documents
+        </span>
+        <span className="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-semibold tabular-nums opacity-70">
+          {documents.length}
+        </span>
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {visible.map((d) => (
+          <DocThumb
+            key={d.id}
+            doc={d}
+            isHovered={hoveredId === d.id}
+            onMouseEnter={() => setHoveredId(d.id)}
+            onMouseLeave={() => setHoveredId(null)}
+          />
+        ))}
+      </div>
+      {/* Inline expand area — keeps the parent preview popup open since
+          mouse never leaves it. Renders the big preview just below the
+          thumb row when one is hovered. */}
+      {hovered ? <DocLargePreview doc={hovered} /> : null}
+    </div>
+  )
+}
+
+function DocThumb({
+  doc,
+  isHovered,
+  onMouseEnter,
+  onMouseLeave,
+}: {
+  doc: LoadDocPreview
+  isHovered?: boolean
+  onMouseEnter?: () => void
+  onMouseLeave?: () => void
+}) {
   const isImg = doc.mime_type.startsWith("image/")
   const fullLabel = DOCUMENT_TYPE_LABEL[doc.type as DocumentType] ?? doc.type
   const code = DOCUMENT_TYPE_CODE[doc.type as DocumentType] ?? "DOC"
   const Inner = (
     <div
       className={cn(
-        "group relative flex aspect-[3/4] flex-col overflow-hidden rounded-lg border border-white/10 bg-white/5",
-        "transition-all hover:-translate-y-0.5 hover:border-brand-gold/40 hover:bg-white/10 hover:shadow-[0_4px_12px_-2px_rgba(10,14,26,0.4)]",
+        "group relative flex aspect-[3/4] flex-col overflow-hidden rounded-lg border bg-white/5",
+        "transition-all hover:-translate-y-0.5 hover:bg-white/10 hover:shadow-[0_4px_12px_-2px_rgba(10,14,26,0.4)]",
+        isHovered
+          ? "border-brand-gold/60 shadow-[0_4px_12px_-2px_rgba(10,14,26,0.4)]"
+          : "border-white/10 hover:border-brand-gold/40",
       )}
       title={`${fullLabel} · ${doc.file_name}`}
     >
@@ -662,6 +697,10 @@ function DocThumb({ doc }: { doc: LoadDocPreview }) {
       </span>
     </div>
   )
+  const sharedProps = {
+    onMouseEnter,
+    onMouseLeave,
+  }
   return doc.signed_url ? (
     <a
       href={doc.signed_url}
@@ -669,11 +708,71 @@ function DocThumb({ doc }: { doc: LoadDocPreview }) {
       rel="noopener noreferrer"
       onClick={(e) => e.stopPropagation()}
       className="block"
+      {...sharedProps}
     >
       {Inner}
     </a>
   ) : (
-    Inner
+    <div {...sharedProps}>{Inner}</div>
+  )
+}
+
+function DocLargePreview({ doc }: { doc: LoadDocPreview }) {
+  const isImg = doc.mime_type.startsWith("image/")
+  const isPdf = doc.mime_type === "application/pdf"
+  const fullLabel = DOCUMENT_TYPE_LABEL[doc.type as DocumentType] ?? doc.type
+
+  return (
+    <div
+      className={cn(
+        "flex flex-col overflow-hidden rounded-lg border border-white/15 bg-white/5",
+        "animate-in fade-in-0 zoom-in-95 duration-150",
+      )}
+    >
+      <div className="flex items-center justify-center bg-brand-midnight/40">
+        {isImg && doc.signed_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={doc.signed_url}
+            alt={doc.file_name}
+            className="max-h-[260px] w-full object-contain"
+            loading="lazy"
+          />
+        ) : isPdf && doc.signed_url ? (
+          <iframe
+            src={`${doc.signed_url}#toolbar=0&navpanes=0&view=FitH`}
+            title={doc.file_name}
+            className="h-[260px] w-full bg-white"
+          />
+        ) : (
+          <div className="flex w-full flex-col items-center justify-center gap-2 px-4 py-10">
+            <FileText className="size-10 text-brand-cloud/50" />
+            <span className="text-[10px] uppercase tracking-wider opacity-60">
+              {doc.mime_type || "Unknown type"}
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-white/[0.04] px-3 py-2">
+        <div className="flex min-w-0 flex-col leading-tight">
+          <span className="text-xs font-semibold">{fullLabel}</span>
+          <span className="truncate text-[10px] opacity-60">
+            {doc.file_name}
+          </span>
+        </div>
+        {doc.signed_url ? (
+          <a
+            href={doc.signed_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="shrink-0 text-[10px] font-semibold text-brand-teal-light hover:text-brand-cloud"
+          >
+            Open ↗
+          </a>
+        ) : null}
+      </div>
+    </div>
   )
 }
 
