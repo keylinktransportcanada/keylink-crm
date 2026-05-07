@@ -1,0 +1,11 @@
+# Supabase
+.branches
+.temp
+
+# Studio SQL Editor snippets — local dev state, not source code
+snippets/
+
+# dotenvx
+.env.keys
+.env.local
+.env.*.local
