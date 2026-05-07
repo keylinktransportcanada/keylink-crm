@@ -245,11 +245,12 @@ otp_expiry = 3600
 
 # Branded recovery email used by the /login "Forgot password?" magic-link
 # flow and by any other code path that calls supabase.auth.resetPasswordForEmail.
-# NOTE: content_path is resolved relative to the supabase/ directory, not the
-# project root — leaving the ./supabase/ prefix off intentionally.
+# NOTE: paths in [auth.email.template.*] are resolved relative to the project
+# root, while paths in [auth.email.notification.*] are resolved relative to the
+# supabase/ directory. Don't unify them or one block will break.
 [auth.email.template.recovery]
 subject = "Reset your Keylink CRM password"
-content_path = "./templates/recovery.html"
+content_path = "./supabase/templates/recovery.html"
 
 # Branded notification sent automatically whenever a user's password is
 # changed (admin reset, self-service change). Triggered by Supabase's auth
