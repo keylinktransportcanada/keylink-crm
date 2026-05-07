@@ -1,6 +1,22 @@
 import Link from "next/link"
 import { format, parseISO } from "date-fns"
-import { Plus } from "lucide-react"
+import {
+  Activity,
+  AlertTriangle,
+  BadgeCheck,
+  CalendarClock,
+  CircleCheck,
+  CircleDollarSign,
+  Clock,
+  FileText,
+  ListChecks,
+  PackageCheck,
+  Plus,
+  TrendingUp,
+  Truck as TruckIcon,
+  UserCheck,
+  type LucideIcon,
+} from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -13,6 +29,11 @@ import {
 } from "@/lib/schemas/loads"
 import { createClient } from "@/lib/supabase/server"
 import { cn } from "@/lib/utils"
+
+import {
+  OperationsChart,
+  type ChartPoint,
+} from "./operations-chart"
 
 type LoadStatus = (typeof LOAD_STATUS_VALUES)[number]
 
@@ -58,6 +79,62 @@ function todayInToronto(): string {
 function startOfMonthInToronto(): string {
   const today = todayInToronto()
   return `${today.slice(0, 7)}-01`
+}
+
+const DELIVERED_STATUSES = new Set<LoadStatus>(["delivered", "invoiced", "paid"])
+
+function isoDaysAgo(today: string, n: number): string {
+  // Subtract n days from a YYYY-MM-DD without crossing into Date timezone weirdness.
+  const d = new Date(`${today}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() - n)
+  return d.toISOString().slice(0, 10)
+}
+
+type DeliveredRow = {
+  delivery_date: string | null
+  total_billed_cad: number | string | null
+  status: LoadStatus
+}
+
+function buildDailySeries(
+  rows: DeliveredRow[],
+  startDate: string,
+  days: number,
+): ChartPoint[] {
+  const buckets = new Map<string, { revenue: number; count: number }>()
+  for (let i = 0; i < days; i++) {
+    const d = isoDaysAgo(startDate, days - 1 - i)
+    buckets.set(d, { revenue: 0, count: 0 })
+  }
+  for (const r of rows) {
+    if (!r.delivery_date || !DELIVERED_STATUSES.has(r.status)) continue
+    const bucket = buckets.get(r.delivery_date)
+    if (!bucket) continue
+    bucket.revenue += Number(r.total_billed_cad ?? 0)
+    bucket.count += 1
+  }
+  return Array.from(buckets.entries()).map(([date, v]) => ({
+    date,
+    revenue: v.revenue,
+    count: v.count,
+  }))
+}
+
+function totalsForRange(
+  rows: DeliveredRow[],
+  fromInclusive: string,
+  toInclusive: string,
+): { revenue: number; count: number } {
+  let revenue = 0
+  let count = 0
+  for (const r of rows) {
+    if (!r.delivery_date || !DELIVERED_STATUSES.has(r.status)) continue
+    if (r.delivery_date < fromInclusive || r.delivery_date > toInclusive)
+      continue
+    revenue += Number(r.total_billed_cad ?? 0)
+    count += 1
+  }
+  return { revenue, count }
 }
 
 export default async function DashboardPage() {
@@ -111,6 +188,10 @@ async function DispatchView({
 }) {
   const supabase = await createClient()
   const today = todayInToronto()
+  const sixtyDaysAgo = isoDaysAgo(today, 59)
+  const thirtyDaysAgo = isoDaysAgo(today, 29)
+  const sixtyDaysAgoStart = isoDaysAgo(today, 59)
+  const thirtyOneDaysAgo = isoDaysAgo(today, 30)
 
   const [
     { data: loads },
@@ -163,6 +244,21 @@ async function DispatchView({
     (l) => l.is_cross_border && l.pickup_date === today,
   )
 
+  // Revenue / deliveries trend (last 30 days, with previous 30 for delta).
+  const deliveredRows: DeliveredRow[] = all.map((l) => ({
+    delivery_date: l.delivery_date,
+    total_billed_cad: l.total_billed_cad,
+    status: l.status,
+  }))
+  const series = buildDailySeries(deliveredRows, today, 30)
+  const previous = totalsForRange(
+    deliveredRows,
+    sixtyDaysAgoStart,
+    thirtyOneDaysAgo,
+  )
+  void thirtyDaysAgo
+  void sixtyDaysAgo
+
   // Build the live board: top ~12 active loads sorted by pickup date.
   const boardLoads = inProgress.slice(0, 12)
   const customerIds = [...new Set(boardLoads.map((l) => l.customer_id))]
@@ -191,35 +287,48 @@ async function DispatchView({
 
   return (
     <div className="flex flex-col gap-6">
+      <OperationsChart
+        series={series}
+        previousTotalRevenue={previous.revenue}
+        previousTotalCount={previous.count}
+        title="Operations"
+      />
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
         <Kpi
+          icon={Activity}
           label="In progress"
           value={inProgress.length}
           accent="indigo"
           href="/loads"
         />
         <Kpi
+          icon={unassigned.length > 0 ? AlertTriangle : CircleCheck}
           label="Unassigned"
           value={unassigned.length}
           accent={unassigned.length > 0 ? "red" : "muted"}
           href="/loads"
         />
         <Kpi
+          icon={CalendarClock}
           label="Pickups today"
           value={pickupsToday.length}
           accent="amber"
         />
         <Kpi
+          icon={PackageCheck}
           label="Delivered today"
           value={deliveredToday.length}
           accent="emerald"
         />
         <Kpi
+          icon={UserCheck}
           label="Active drivers"
           value={activeDriversCount ?? 0}
           accent="blue"
         />
         <Kpi
+          icon={TruckIcon}
           label="Available trucks"
           value={availableTrucksCount ?? 0}
           accent="blue"
@@ -345,12 +454,16 @@ async function DispatchView({
 
 async function AccountingView() {
   const supabase = await createClient()
+  const today = todayInToronto()
   const monthStart = startOfMonthInToronto()
+  const sixtyDaysAgo = isoDaysAgo(today, 59)
+  const thirtyOneDaysAgo = isoDaysAgo(today, 30)
 
   const [
     { data: needsInvoice },
     { data: invoiced },
     { data: thisMonth },
+    { data: trendRows },
   ] = await Promise.all([
     supabase
       .from("loads")
@@ -368,6 +481,11 @@ async function AccountingView() {
       .select("id, status, total_billed_cad, updated_at")
       .in("status", ["invoiced", "paid"])
       .gte("updated_at", `${monthStart}T00:00:00Z`),
+    supabase
+      .from("loads")
+      .select("delivery_date, total_billed_cad, status")
+      .in("status", ["delivered", "invoiced", "paid"])
+      .gte("delivery_date", sixtyDaysAgo),
   ])
 
   const sumCad = (rows: { total_billed_cad: number | string | null }[] | null) =>
@@ -381,6 +499,10 @@ async function AccountingView() {
   const paidThisMonth = sumCad(
     (thisMonth ?? []).filter((r) => r.status === "paid"),
   )
+
+  const trend = (trendRows ?? []) as DeliveredRow[]
+  const series = buildDailySeries(trend, today, 30)
+  const previous = totalsForRange(trend, sixtyDaysAgo, thirtyOneDaysAgo)
 
   const queue = needsInvoice ?? []
   const queueCustomerIds = [...new Set(queue.map((l) => l.customer_id))]
@@ -396,23 +518,34 @@ async function AccountingView() {
 
   return (
     <div className="flex flex-col gap-6">
+      <OperationsChart
+        series={series}
+        previousTotalRevenue={previous.revenue}
+        previousTotalCount={previous.count}
+        title="Revenue"
+      />
+
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Kpi
+          icon={FileText}
           label="Awaiting invoice"
           value={queue.length}
           accent={queue.length > 0 ? "amber" : "muted"}
         />
         <Kpi
+          icon={CircleDollarSign}
           label="A/R outstanding"
           value={formatCAD(arOutstanding)}
           accent="indigo"
         />
         <Kpi
+          icon={TrendingUp}
           label="Revenue this month"
           value={formatCAD(revenueThisMonth)}
           accent="emerald"
         />
         <Kpi
+          icon={BadgeCheck}
           label="Paid this month"
           value={formatCAD(paidThisMonth)}
           accent="emerald"
@@ -516,10 +649,30 @@ async function DriverView({ profile }: { profile: CurrentProfile }) {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Kpi label="Pickups today" value={todays.length} accent="amber" />
-        <Kpi label="Active loads" value={active.length} accent="indigo" />
-        <Kpi label="Upcoming" value={upcoming.length} accent="blue" />
-        <Kpi label="Total assigned" value={loads.length} accent="muted" />
+        <Kpi
+          icon={CalendarClock}
+          label="Pickups today"
+          value={todays.length}
+          accent="amber"
+        />
+        <Kpi
+          icon={TruckIcon}
+          label="Active loads"
+          value={active.length}
+          accent="indigo"
+        />
+        <Kpi
+          icon={Clock}
+          label="Upcoming"
+          value={upcoming.length}
+          accent="blue"
+        />
+        <Kpi
+          icon={ListChecks}
+          label="Total assigned"
+          value={loads.length}
+          accent="muted"
+        />
       </div>
 
       <section className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-5">
@@ -680,12 +833,23 @@ const ACCENT_TONE: Record<
   muted: "text-foreground",
 }
 
+const ICON_BG: Record<keyof typeof ACCENT_TONE, string> = {
+  blue: "bg-blue-500/10 text-blue-600 dark:text-blue-300",
+  indigo: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300",
+  emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
+  amber: "bg-amber-500/10 text-amber-600 dark:text-amber-300",
+  red: "bg-red-500/10 text-red-600 dark:text-red-300",
+  muted: "bg-muted text-muted-foreground",
+}
+
 function Kpi({
+  icon: Icon,
   label,
   value,
   accent,
   href,
 }: {
+  icon?: LucideIcon
   label: string
   value: number | string
   accent: keyof typeof ACCENT_TONE
@@ -693,7 +857,20 @@ function Kpi({
 }) {
   const inner = (
     <>
-      <CardLabel>{label}</CardLabel>
+      <div className="flex items-start justify-between gap-2">
+        <CardLabel>{label}</CardLabel>
+        {Icon ? (
+          <span
+            className={cn(
+              "inline-flex size-7 shrink-0 items-center justify-center rounded-lg",
+              ICON_BG[accent],
+            )}
+            aria-hidden="true"
+          >
+            <Icon className="size-4" />
+          </span>
+        ) : null}
+      </div>
       <span
         className={cn(
           "font-display text-3xl tracking-wide tabular-nums",
