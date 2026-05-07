@@ -33,6 +33,11 @@ import {
   loadSchema,
   type LoadInput,
 } from "@/lib/schemas/loads"
+import {
+  regionFieldLabel,
+  regionLabel,
+  regionsForCountry,
+} from "@/lib/regions"
 
 import { createLoad, updateLoad } from "./actions"
 
@@ -118,6 +123,8 @@ export function LoadForm({
   const rate = form.watch("rate")
   const fuel = form.watch("fuel_surcharge")
   const acc = form.watch("accessorial_charges")
+  const originCountry = form.watch("origin_country")
+  const destinationCountry = form.watch("destination_country")
   const enteredTotal =
     (rate ?? 0) + (fuel ?? 0) + (acc ?? 0)
 
@@ -285,10 +292,33 @@ export function LoadForm({
               name="origin_province"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Province / state</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ON, QC, NY…" {...field} />
-                  </FormControl>
+                  <FormLabel>{regionFieldLabel(originCountry)}</FormLabel>
+                  <Select
+                    value={field.value || "_none"}
+                    onValueChange={(v) =>
+                      field.onChange(v === "_none" ? "" : v)
+                    }
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {(v: string | null) =>
+                            !v || v === "_none"
+                              ? `Pick a ${regionFieldLabel(originCountry).toLowerCase()}…`
+                              : regionLabel(originCountry, v)
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="_none">—</SelectItem>
+                      {regionsForCountry(originCountry).map((r) => (
+                        <SelectItem key={r.code} value={r.code}>
+                          {r.code} · {r.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -301,7 +331,12 @@ export function LoadForm({
                   <FormLabel>Country</FormLabel>
                   <Select
                     value={field.value || "CA"}
-                    onValueChange={field.onChange}
+                    onValueChange={(v) => {
+                      field.onChange(v ?? "CA")
+                      // Clear province so it doesn't keep a stale code from
+                      // the previous country.
+                      form.setValue("origin_province", "")
+                    }}
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
@@ -373,10 +408,33 @@ export function LoadForm({
               name="destination_province"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Province / state</FormLabel>
-                  <FormControl>
-                    <Input placeholder="ON, QC, NY…" {...field} />
-                  </FormControl>
+                  <FormLabel>{regionFieldLabel(destinationCountry)}</FormLabel>
+                  <Select
+                    value={field.value || "_none"}
+                    onValueChange={(v) =>
+                      field.onChange(v === "_none" ? "" : v)
+                    }
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full">
+                        <SelectValue>
+                          {(v: string | null) =>
+                            !v || v === "_none"
+                              ? `Pick a ${regionFieldLabel(destinationCountry).toLowerCase()}…`
+                              : regionLabel(destinationCountry, v)
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="_none">—</SelectItem>
+                      {regionsForCountry(destinationCountry).map((r) => (
+                        <SelectItem key={r.code} value={r.code}>
+                          {r.code} · {r.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                   <FormMessage />
                 </FormItem>
               )}
@@ -389,7 +447,10 @@ export function LoadForm({
                   <FormLabel>Country</FormLabel>
                   <Select
                     value={field.value || "CA"}
-                    onValueChange={field.onChange}
+                    onValueChange={(v) => {
+                      field.onChange(v ?? "CA")
+                      form.setValue("destination_province", "")
+                    }}
                   >
                     <FormControl>
                       <SelectTrigger className="w-full">
