@@ -2,9 +2,15 @@
 
 import Image from "next/image"
 import { useState, useTransition } from "react"
+import { Bell } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
 import { signOutAction } from "@/app/(public)/login/actions"
 import type { CurrentProfile } from "@/lib/auth"
 
@@ -36,6 +42,44 @@ export function AppTopbar({ profile }: { profile: CurrentProfile }) {
       </div>
 
       <div className="flex items-center gap-3">
+        <Popover>
+          <PopoverTrigger
+            render={
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label="Notifications"
+                className="border-white/15 bg-transparent text-brand-cloud hover:bg-white/5 hover:text-brand-cloud"
+              />
+            }
+          >
+            <Bell className="size-4" />
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            sideOffset={8}
+            className="w-80 p-0 text-foreground"
+          >
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <h3 className="text-sm font-semibold">Notifications</h3>
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Soon
+              </span>
+            </div>
+            <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
+              <Bell
+                className="size-7 text-muted-foreground/40"
+                aria-hidden="true"
+              />
+              <p className="text-sm font-medium">You&apos;re all caught up</p>
+              <p className="max-w-[220px] text-xs text-muted-foreground">
+                New notifications will appear here once messaging and alerts
+                ship.
+              </p>
+            </div>
+          </PopoverContent>
+        </Popover>
+
         <button
           type="button"
           onClick={() => setPickerOpen(true)}
