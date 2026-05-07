@@ -890,25 +890,28 @@ function CardLabel({ children }: { children: React.ReactNode }) {
   )
 }
 
+// Light-on-dark accent colours for the liquid-glass KPI cards. The shades
+// are picked to read against the brand-midnight backdrop without overpowering
+// the brand-cloud body text.
 const ACCENT_TONE: Record<
   "blue" | "indigo" | "emerald" | "amber" | "red" | "muted",
   string
 > = {
-  blue: "text-blue-700 dark:text-blue-300",
-  indigo: "text-indigo-700 dark:text-indigo-300",
-  emerald: "text-emerald-700 dark:text-emerald-300",
-  amber: "text-amber-700 dark:text-amber-300",
-  red: "text-red-700 dark:text-red-300",
-  muted: "text-foreground",
+  blue: "text-blue-200",
+  indigo: "text-indigo-200",
+  emerald: "text-emerald-200",
+  amber: "text-amber-200",
+  red: "text-red-300",
+  muted: "text-brand-cloud",
 }
 
 const ICON_BG: Record<keyof typeof ACCENT_TONE, string> = {
-  blue: "bg-blue-500/10 text-blue-600 dark:text-blue-300",
-  indigo: "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300",
-  emerald: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300",
-  amber: "bg-amber-500/10 text-amber-600 dark:text-amber-300",
-  red: "bg-red-500/10 text-red-600 dark:text-red-300",
-  muted: "bg-muted text-muted-foreground",
+  blue: "bg-blue-400/15 text-blue-200",
+  indigo: "bg-indigo-400/15 text-indigo-200",
+  emerald: "bg-emerald-400/15 text-emerald-200",
+  amber: "bg-amber-400/15 text-amber-200",
+  red: "bg-red-400/15 text-red-200",
+  muted: "bg-white/10 text-brand-cloud/80",
 }
 
 function Kpi({
@@ -928,8 +931,22 @@ function Kpi({
 }) {
   const inner = (
     <>
+      {/* Subtle teal radial wash mirrors the preview-card glass treatment so
+          KPIs feel like they belong to the same surface family. */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-20 bg-[radial-gradient(ellipse_at_50%_0%,rgba(34,160,146,0.18)_0%,transparent_70%)]"
+      />
       <div className="flex items-start justify-between gap-2">
-        <CardLabel>{label}</CardLabel>
+        <div className="flex items-center gap-2">
+          <span
+            className="size-1.5 rounded-full bg-brand-gold"
+            aria-hidden="true"
+          />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-cloud/65">
+            {label}
+          </span>
+        </div>
         {Icon ? (
           <span
             className={cn(
@@ -955,13 +972,21 @@ function Kpi({
     </>
   )
 
+  // Liquid glass: brand-midnight backdrop + blur + 1px white inset highlight
+  // along the top edge + soft layered drop shadow. Matches PreviewCardContent.
   const className = cn(
-    "flex flex-col justify-between gap-1 rounded-xl border border-border/70 bg-card shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]",
+    "relative isolate flex flex-col justify-between gap-1 overflow-hidden rounded-xl border border-white/10 bg-brand-midnight/80 text-brand-cloud backdrop-blur-2xl backdrop-saturate-150 [box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_24px_48px_-16px_rgba(10,14,26,0.45),0_4px_16px_-4px_rgba(10,14,26,0.25)]",
     compact ? "p-3 gap-1.5" : "p-4 gap-2",
   )
 
   return href ? (
-    <Link href={href} className={cn(className, "hover:bg-muted/20")}>
+    <Link
+      href={href}
+      className={cn(
+        className,
+        "transition-colors hover:bg-brand-midnight/70 hover:border-white/15",
+      )}
+    >
       {inner}
     </Link>
   ) : (
