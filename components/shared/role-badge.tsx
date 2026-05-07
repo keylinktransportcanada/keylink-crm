@@ -1,8 +1,8 @@
 import {
-  Calculator,
-  RadioTower,
-  ShieldCheck,
-  Truck,
+  Headset,
+  KeyRound,
+  Navigation,
+  Receipt,
   type LucideIcon,
 } from "lucide-react"
 
@@ -23,25 +23,25 @@ type RoleMeta = {
 export const ROLE_META: Record<Role, RoleMeta> = {
   admin: {
     label: "Admin",
-    Icon: ShieldCheck,
+    Icon: KeyRound,
     pill: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200/70",
     iconColor: "text-blue-600",
   },
   dispatcher: {
     label: "Dispatcher",
-    Icon: RadioTower,
+    Icon: Headset,
     pill: "bg-teal-50 text-teal-700 ring-1 ring-inset ring-teal-200/70",
     iconColor: "text-teal-600",
   },
   driver: {
     label: "Driver",
-    Icon: Truck,
+    Icon: Navigation,
     pill: "bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-200/70",
     iconColor: "text-amber-700",
   },
   accounting: {
     label: "Accounting",
-    Icon: Calculator,
+    Icon: Receipt,
     pill: "bg-slate-100 text-slate-700 ring-1 ring-inset ring-slate-200/70",
     iconColor: "text-slate-600",
   },

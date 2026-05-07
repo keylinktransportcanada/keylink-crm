@@ -5,8 +5,10 @@ import { revalidatePath } from "next/cache"
 import { requireRole } from "@/lib/auth"
 import {
   createEmployeeSchema,
+  setPasswordSchema,
   updateEmployeeSchema,
   type CreateEmployeeInput,
+  type SetPasswordInput,
   type UpdateEmployeeInput,
 } from "@/lib/schemas/employees"
 import { getNextEmployeeId as rpcNextEmployeeId } from "@/lib/employee-id"
@@ -121,6 +123,69 @@ export async function updateEmployee(
 
   revalidatePath("/admin/employees")
   return { ok: true }
+}
+
+type SetPasswordResult =
+  | { ok: true; emailSent: boolean }
+  | { error: FieldErrors }
+
+export async function setEmployeePassword(
+  input: SetPasswordInput,
+): Promise<SetPasswordResult> {
+  const actor = await requireRole(["admin"])
+
+  const parsed = setPasswordSchema.safeParse(input)
+  if (!parsed.success) {
+    return { error: parsed.error.flatten().fieldErrors }
+  }
+
+  if (parsed.data.id === actor.id) {
+    return {
+      error: {
+        _form: [
+          "You can't reset your own password from this flow. Sign out and use the password reset link on the login page.",
+        ],
+      },
+    }
+  }
+
+  const admin = createAdminClient()
+
+  const { data: updated, error: updateErr } =
+    await admin.auth.admin.updateUserById(parsed.data.id, {
+      password: parsed.data.password,
+    })
+
+  if (updateErr || !updated.user) {
+    return {
+      error: {
+        _form: [updateErr?.message ?? "Failed to set password."],
+      },
+    }
+  }
+
+  // Notification: trigger Supabase's recovery email so the user knows their
+  // password changed. They can either use the new password (admin shares it
+  // out-of-band) or click the recovery link to set their own. The email body
+  // uses Supabase's default "Reset password" template; customize it under
+  // Authentication -> Email Templates -> Reset Password if a custom
+  // "Your password was changed" copy is wanted later.
+  let emailSent = false
+  const targetEmail = updated.user.email
+  if (targetEmail) {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
+    const userClient = await createClient()
+    const { error: emailErr } = await userClient.auth.resetPasswordForEmail(
+      targetEmail,
+      {
+        redirectTo: siteUrl ? `${siteUrl}/auth/callback` : undefined,
+      },
+    )
+    emailSent = !emailErr
+  }
+
+  revalidatePath("/admin/employees")
+  return { ok: true, emailSent }
 }
 
 export async function deleteEmployee(id: string): Promise<ToggleResult> {

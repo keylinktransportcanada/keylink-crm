@@ -41,3 +41,19 @@ export const updateEmployeeSchema = z.object({
 })
 
 export type UpdateEmployeeInput = z.infer<typeof updateEmployeeSchema>
+
+export const setPasswordSchema = z
+  .object({
+    id: z.uuid({ message: "Invalid employee id." }),
+    password: z
+      .string()
+      .min(8, { message: "Password must be at least 8 characters." })
+      .max(128, { message: "Password is too long." }),
+    confirm: z.string(),
+  })
+  .refine((data) => data.password === data.confirm, {
+    message: "Passwords don't match.",
+    path: ["confirm"],
+  })
+
+export type SetPasswordInput = z.infer<typeof setPasswordSchema>
