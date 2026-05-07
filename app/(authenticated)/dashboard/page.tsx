@@ -90,6 +90,14 @@ function isoDaysAgo(today: string, n: number): string {
   return d.toISOString().slice(0, 10)
 }
 
+function torontoDateOf(iso: string): string {
+  // Convert a UTC timestamp into YYYY-MM-DD in America/Toronto. en-CA emits
+  // exactly that format.
+  return new Date(iso).toLocaleDateString("en-CA", {
+    timeZone: "America/Toronto",
+  })
+}
+
 type DeliveredRow = {
   delivery_date: string | null
   total_billed_cad: number | string | null
@@ -199,6 +207,7 @@ async function DispatchView({
     { count: availableTrucksCount },
     { count: customersCount },
     employeesAgg,
+    { data: deliveredEvents },
   ] = await Promise.all([
     supabase
       .from("loads")
@@ -227,6 +236,12 @@ async function DispatchView({
           .select("role")
           .eq("active", true)
       : Promise.resolve({ data: null }),
+    supabase
+      .from("load_status_events")
+      .select("load_id, created_at")
+      .eq("status", "delivered")
+      .gte("created_at", `${sixtyDaysAgo}T00:00:00Z`)
+      .order("created_at", { ascending: true }),
   ])
 
   const all = loads ?? []
@@ -245,11 +260,23 @@ async function DispatchView({
   )
 
   // Revenue / deliveries trend (last 30 days, with previous 30 for delta).
-  const deliveredRows: DeliveredRow[] = all.map((l) => ({
-    delivery_date: l.delivery_date,
-    total_billed_cad: l.total_billed_cad,
-    status: l.status,
-  }))
+  // Drives off the actual "delivered" status-event timestamps, not the load's
+  // planned delivery_date — that way a load delivered today shows up today
+  // even if its planned delivery_date was a week ago or never set.
+  const loadById = new Map(all.map((l) => [l.id, l]))
+  const seenLoad = new Set<string>()
+  const deliveredRows: DeliveredRow[] = []
+  for (const e of deliveredEvents ?? []) {
+    if (seenLoad.has(e.load_id)) continue
+    seenLoad.add(e.load_id)
+    const l = loadById.get(e.load_id)
+    if (!l) continue
+    deliveredRows.push({
+      delivery_date: torontoDateOf(e.created_at),
+      total_billed_cad: l.total_billed_cad,
+      status: l.status,
+    })
+  }
   const series = buildDailySeries(deliveredRows, today, 30)
   const previous = totalsForRange(
     deliveredRows,
@@ -257,7 +284,6 @@ async function DispatchView({
     thirtyOneDaysAgo,
   )
   void thirtyDaysAgo
-  void sixtyDaysAgo
 
   // Build the live board: top ~12 active loads sorted by pickup date.
   const boardLoads = inProgress.slice(0, 12)
@@ -471,7 +497,7 @@ async function AccountingView() {
     { data: needsInvoice },
     { data: invoiced },
     { data: thisMonth },
-    { data: trendRows },
+    { data: deliveredEvents },
   ] = await Promise.all([
     supabase
       .from("loads")
@@ -490,10 +516,11 @@ async function AccountingView() {
       .in("status", ["invoiced", "paid"])
       .gte("updated_at", `${monthStart}T00:00:00Z`),
     supabase
-      .from("loads")
-      .select("delivery_date, total_billed_cad, status")
-      .in("status", ["delivered", "invoiced", "paid"])
-      .gte("delivery_date", sixtyDaysAgo),
+      .from("load_status_events")
+      .select("load_id, created_at")
+      .eq("status", "delivered")
+      .gte("created_at", `${sixtyDaysAgo}T00:00:00Z`)
+      .order("created_at", { ascending: true }),
   ])
 
   const sumCad = (rows: { total_billed_cad: number | string | null }[] | null) =>
@@ -508,7 +535,35 @@ async function AccountingView() {
     (thisMonth ?? []).filter((r) => r.status === "paid"),
   )
 
-  const trend = (trendRows ?? []) as DeliveredRow[]
+  // Pull totals + status for each delivered event, deduping by load.
+  const eventLoadIds = [
+    ...new Set((deliveredEvents ?? []).map((e) => e.load_id)),
+  ]
+  const { data: eventLoadValues } = eventLoadIds.length
+    ? await supabase
+        .from("loads")
+        .select("id, total_billed_cad, status")
+        .in("id", eventLoadIds)
+    : { data: [] }
+  const valueByLoad = new Map(
+    (eventLoadValues ?? []).map(
+      (l) =>
+        [l.id, { value: Number(l.total_billed_cad ?? 0), status: l.status }] as const,
+    ),
+  )
+  const seenLoad = new Set<string>()
+  const trend: DeliveredRow[] = []
+  for (const e of deliveredEvents ?? []) {
+    if (seenLoad.has(e.load_id)) continue
+    seenLoad.add(e.load_id)
+    const v = valueByLoad.get(e.load_id)
+    if (!v) continue
+    trend.push({
+      delivery_date: torontoDateOf(e.created_at),
+      total_billed_cad: v.value,
+      status: v.status,
+    })
+  }
   const series = buildDailySeries(trend, today, 30)
   const previous = totalsForRange(trend, sixtyDaysAgo, thirtyOneDaysAgo)
 
