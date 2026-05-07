@@ -2,6 +2,19 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
+import {
+  ArrowRight,
+  CheckCircle2,
+  CircleDollarSign,
+  FileText,
+  MapPin,
+  Package,
+  PackageCheck,
+  Send,
+  Truck,
+  X,
+  type LucideIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -19,6 +32,7 @@ import {
   type LOAD_STATUS_VALUES,
 } from "@/lib/schemas/loads"
 import type { Role } from "@/lib/auth"
+import { cn } from "@/lib/utils"
 
 import { transitionLoadStatus } from "../actions"
 
@@ -47,6 +61,20 @@ const DRIVER_ALLOWED = new Set<Status>([
 ])
 
 const ACCOUNTING_ALLOWED = new Set<Status>(["invoiced", "paid"])
+
+const STATUS_ICON: Record<Status, LucideIcon> = {
+  draft: Package,
+  assigned: Send,
+  dispatched: Send,
+  at_pickup: MapPin,
+  loaded: Package,
+  in_transit: Truck,
+  at_delivery: MapPin,
+  delivered: PackageCheck,
+  invoiced: FileText,
+  paid: CircleDollarSign,
+  cancelled: X,
+}
 
 function nextStatusesForRole(current: Status, role: Role): Status[] {
   const candidates = NEXT_FOR_STATUS[current]
@@ -101,20 +129,51 @@ export function StatusActions({
 
   if (candidates.length === 0) return null
 
+  // Split forward-progress actions from the cancellation so they render with
+  // distinct visual weight (primary CTA vs subtle ghost-destructive).
+  const forwardActions = candidates.filter((s) => s !== "cancelled")
+  const cancelAction = candidates.find((s) => s === "cancelled")
+
   return (
     <>
-      <div className="flex flex-wrap gap-2">
-        {candidates.map((s) => (
+      <div className="flex flex-wrap items-center gap-2">
+        {forwardActions.map((s, i) => {
+          const Icon = STATUS_ICON[s]
+          // First forward action is the primary CTA (gold). Any additional
+          // forward actions stay outlined so the next-step is unambiguous.
+          const isPrimary = i === 0
+          return (
+            <Button
+              key={s}
+              size="sm"
+              disabled={pending}
+              onClick={() => handleClick(s)}
+              className={cn(
+                "gap-1.5",
+                isPrimary
+                  ? "bg-brand-gold text-brand-navy hover:bg-brand-gold-light"
+                  : "border border-border bg-background text-foreground hover:bg-muted",
+              )}
+            >
+              <Icon className="size-3.5" />
+              {pending ? "Saving…" : `Mark ${LOAD_STATUS_LABEL[s].toLowerCase()}`}
+              {isPrimary ? <ArrowRight className="size-3.5 opacity-70" /> : null}
+            </Button>
+          )
+        })}
+
+        {cancelAction ? (
           <Button
-            key={s}
             size="sm"
-            variant={s === "cancelled" ? "destructive" : "default"}
+            variant="destructive"
             disabled={pending}
-            onClick={() => handleClick(s)}
+            onClick={() => handleClick(cancelAction)}
+            className="ml-auto gap-1.5"
           >
-            {pending ? "…" : `Mark ${LOAD_STATUS_LABEL[s].toLowerCase()}`}
+            <X className="size-3.5" />
+            Cancel load
           </Button>
-        ))}
+        ) : null}
       </div>
 
       <Dialog
@@ -129,9 +188,17 @@ export function StatusActions({
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {pickedStatus
-                ? `Mark ${LOAD_STATUS_LABEL[pickedStatus].toLowerCase()}`
-                : ""}
+              {pickedStatus ? (
+                <span className="inline-flex items-center gap-2">
+                  {(() => {
+                    const Icon = STATUS_ICON[pickedStatus]
+                    return <Icon className="size-4" />
+                  })()}
+                  Mark {LOAD_STATUS_LABEL[pickedStatus].toLowerCase()}
+                </span>
+              ) : (
+                ""
+              )}
             </DialogTitle>
             <DialogDescription>
               Optionally add a quick location note (e.g. &quot;crossed Peace
@@ -158,6 +225,7 @@ export function StatusActions({
               disabled={pending}
               onClick={() => pickedStatus && apply(pickedStatus, locationNote)}
             >
+              <CheckCircle2 className="size-3.5" />
               {pending ? "Saving…" : "Confirm"}
             </Button>
           </DialogFooter>
