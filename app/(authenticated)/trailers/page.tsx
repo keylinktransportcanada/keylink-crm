@@ -10,7 +10,10 @@ export default async function TrailersPage() {
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("trailers")
-    .select("id, trailer_number, type, status, notes")
+    .select(
+      `id, trailer_number, type, status, plate, plate_province, plate_expiry,
+       vin, last_inspection_date, next_inspection_due, notes`,
+    )
     .order("trailer_number", { ascending: true })
 
   const trailers: TrailerRow[] = data ?? []
@@ -21,7 +24,7 @@ export default async function TrailersPage() {
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Trailers</h1>
           <p className="text-sm text-muted-foreground">
-            Trailer pool. Phase 3 adds plates, VIN, and inspection tracking.
+            Trailer pool with plates, VIN, and inspection schedule.
           </p>
         </div>
       </header>

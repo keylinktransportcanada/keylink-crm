@@ -19,6 +19,14 @@ function toRow(input: TrailerInput) {
     trailer_number: input.trailer_number,
     type: input.type,
     status: input.status,
+
+    plate: input.plate || null,
+    plate_province: input.plate_province || null,
+    plate_expiry: input.plate_expiry || null,
+    vin: input.vin || null,
+    last_inspection_date: input.last_inspection_date || null,
+    next_inspection_due: input.next_inspection_due || null,
+
     notes: input.notes || null,
   }
 }

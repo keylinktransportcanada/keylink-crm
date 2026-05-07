@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { format, parseISO } from "date-fns"
 import { Pencil, Plus } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
@@ -20,6 +21,12 @@ import {
   type EQUIPMENT_STATUS_VALUES,
   type TRAILER_TYPE_VALUES,
 } from "@/lib/schemas/equipment"
+import {
+  nextExpiry,
+  relativeExpiryLabel,
+  SEVERITY_TONE,
+  todayInToronto,
+} from "@/lib/expiry"
 
 import { TrailerDialog } from "./trailer-dialog"
 
@@ -28,6 +35,12 @@ export type TrailerRow = {
   trailer_number: string
   type: (typeof TRAILER_TYPE_VALUES)[number]
   status: (typeof EQUIPMENT_STATUS_VALUES)[number]
+  plate: string | null
+  plate_province: string | null
+  plate_expiry: string | null
+  vin: string | null
+  last_inspection_date: string | null
+  next_inspection_due: string | null
   notes: string | null
 }
 
@@ -47,6 +60,7 @@ export function TrailersTable({
 }) {
   const [editing, setEditing] = useState<TrailerRow | null>(null)
   const [adding, setAdding] = useState(false)
+  const today = todayInToronto()
 
   return (
     <>
@@ -65,8 +79,9 @@ export function TrailersTable({
             <TableRow>
               <TableHead>Trailer #</TableHead>
               <TableHead>Type</TableHead>
+              <TableHead>Plate</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Notes</TableHead>
+              <TableHead>Next expiry</TableHead>
               {canEdit ? (
                 <TableHead className="text-right">Actions</TableHead>
               ) : null}
@@ -76,7 +91,7 @@ export function TrailersTable({
             {trailers.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={canEdit ? 5 : 4}
+                  colSpan={canEdit ? 6 : 5}
                   className="py-10 text-center text-sm text-muted-foreground"
                 >
                   No trailers yet.
@@ -90,38 +105,72 @@ export function TrailersTable({
                 </TableCell>
               </TableRow>
             ) : (
-              trailers.map((t) => (
-                <TableRow key={t.id}>
-                  <TableCell className="font-mono font-medium">
-                    {t.trailer_number}
-                  </TableCell>
-                  <TableCell>{TRAILER_TYPE_LABEL[t.type]}</TableCell>
-                  <TableCell>
-                    <Badge
-                      className={cn(
-                        "border-transparent",
-                        STATUS_TONE[t.status],
-                      )}
-                    >
-                      {EQUIPMENT_STATUS_LABEL[t.status]}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="max-w-xs truncate text-sm text-muted-foreground">
-                    {t.notes ?? "—"}
-                  </TableCell>
-                  {canEdit ? (
-                    <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setEditing(t)}
-                      >
-                        <Pencil className="size-3.5" /> Edit
-                      </Button>
+              trailers.map((t) => {
+                const expiry = nextExpiry(today, [
+                  { label: "Plate", date: t.plate_expiry },
+                  { label: "Inspection", date: t.next_inspection_due },
+                ])
+                return (
+                  <TableRow key={t.id}>
+                    <TableCell className="font-mono font-medium">
+                      {t.trailer_number}
                     </TableCell>
-                  ) : null}
-                </TableRow>
-              ))
+                    <TableCell>{TRAILER_TYPE_LABEL[t.type]}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {t.plate
+                        ? `${t.plate}${t.plate_province ? ` (${t.plate_province})` : ""}`
+                        : "—"}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        className={cn(
+                          "border-transparent",
+                          STATUS_TONE[t.status],
+                        )}
+                      >
+                        {EQUIPMENT_STATUS_LABEL[t.status]}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {expiry ? (
+                        <div className="flex flex-col gap-0.5">
+                          <span
+                            className={cn(
+                              "inline-flex w-fit items-center gap-1.5 rounded-md px-1.5 py-0.5 text-[11px] font-semibold",
+                              SEVERITY_TONE[expiry.severity],
+                            )}
+                          >
+                            {expiry.label}
+                            <span className="opacity-70">
+                              {expiry.severity === "expired"
+                                ? `expired ${relativeExpiryLabel(expiry.daysUntil)}`
+                                : relativeExpiryLabel(expiry.daysUntil)}
+                            </span>
+                          </span>
+                          <span className="text-[10px] text-muted-foreground">
+                            {format(parseISO(expiry.date), "MMM d, yyyy")}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground italic">
+                          no dates set
+                        </span>
+                      )}
+                    </TableCell>
+                    {canEdit ? (
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditing(t)}
+                        >
+                          <Pencil className="size-3.5" /> Edit
+                        </Button>
+                      </TableCell>
+                    ) : null}
+                  </TableRow>
+                )
+              })
             )}
           </TableBody>
         </Table>
