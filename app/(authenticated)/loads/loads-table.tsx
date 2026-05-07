@@ -329,7 +329,7 @@ export function LoadsTable({ loads }: { loads: LoadListRow[] }) {
 function LoadPreview({ load }: { load: LoadListRow }) {
   return (
     <div className="flex flex-col">
-      <div className="flex items-start justify-between gap-3 border-b border-border bg-muted/30 px-4 py-3">
+      <div className="flex items-start justify-between gap-3 border-b border-white/10 bg-white/5 px-4 py-3">
         <div className="flex flex-col gap-1">
           <span className="font-mono text-sm font-semibold tracking-tight">
             {load.load_number}
@@ -344,13 +344,13 @@ function LoadPreview({ load }: { load: LoadListRow }) {
               {LOAD_STATUS_LABEL[load.status]}
             </Badge>
             {load.is_cross_border ? (
-              <Badge className="border-transparent bg-brand-teal/20 text-[10px] font-semibold uppercase tracking-wider text-brand-teal-light">
+              <Badge className="border-transparent bg-brand-teal/30 text-[10px] font-semibold uppercase tracking-wider text-brand-teal-light">
                 Cross-border
               </Badge>
             ) : null}
           </div>
         </div>
-        <span className="text-right font-display text-lg tracking-wide text-brand-navy">
+        <span className="text-right font-display text-lg tracking-wide">
           {formatCAD(load.total_billed_cad)}
         </span>
       </div>
@@ -358,12 +358,12 @@ function LoadPreview({ load }: { load: LoadListRow }) {
       <div className="flex flex-col gap-3 px-4 py-3">
         <div className="flex flex-col gap-2 text-xs">
           <Row icon={<MapPin className="size-3.5" />} label="Customer">
-            <span className="font-medium text-foreground">
+            <span className="font-medium">
               {load.customer_name ?? "—"}
             </span>
           </Row>
           <Row icon={<MapPin className="size-3.5" />} label="Origin">
-            <span className="text-foreground">
+            <span>
               {formatLocationFull(
                 load.origin_company,
                 load.origin_city,
@@ -373,7 +373,7 @@ function LoadPreview({ load }: { load: LoadListRow }) {
             </span>
           </Row>
           <Row icon={<ArrowRight className="size-3.5" />} label="Destination">
-            <span className="text-foreground">
+            <span>
               {formatLocationFull(
                 load.destination_company,
                 load.destination_city,
@@ -429,8 +429,8 @@ function LoadPreview({ load }: { load: LoadListRow }) {
         </div>
 
         {load.commodity ? (
-          <div className="flex flex-col gap-0.5 rounded-md bg-muted/30 px-2.5 py-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="flex flex-col gap-0.5 rounded-md bg-white/5 px-2.5 py-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">
               Commodity
             </span>
             <span className="text-xs">{load.commodity}</span>
@@ -438,8 +438,8 @@ function LoadPreview({ load }: { load: LoadListRow }) {
         ) : null}
 
         {load.notes ? (
-          <div className="flex flex-col gap-0.5 rounded-md bg-muted/30 px-2.5 py-1.5">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <div className="flex flex-col gap-0.5 rounded-md bg-white/5 px-2.5 py-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">
               Notes
             </span>
             <span className="line-clamp-3 text-xs">{load.notes}</span>
@@ -447,10 +447,13 @@ function LoadPreview({ load }: { load: LoadListRow }) {
         ) : null}
       </div>
 
-      <div className="flex items-center justify-end gap-2 border-t border-border bg-muted/20 px-4 py-2">
+      <div className="flex items-center justify-end gap-2 border-t border-white/10 bg-white/5 px-4 py-2">
         <Link
           href={`/loads/${load.id}`}
-          className={cn(buttonVariants({ size: "sm" }))}
+          className={cn(
+            buttonVariants({ size: "sm" }),
+            "bg-brand-gold text-brand-navy hover:bg-brand-gold-light",
+          )}
           onClick={(e) => e.stopPropagation()}
         >
           Open load
@@ -472,9 +475,9 @@ function Row({
 }) {
   return (
     <div className="flex items-start gap-2">
-      <span className="mt-0.5 text-muted-foreground">{icon}</span>
+      <span className="mt-0.5 opacity-60">{icon}</span>
       <div className="flex flex-1 flex-col gap-0.5">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">
           {label}
         </span>
         {children}
@@ -496,13 +499,13 @@ function Field({
 }) {
   return (
     <div className="flex items-start gap-2">
-      <span className="mt-0.5 text-muted-foreground">{icon}</span>
+      <span className="mt-0.5 opacity-60">{icon}</span>
       <div className="flex flex-1 flex-col gap-0.5 leading-tight">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+        <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">
           {label}
         </span>
-        <span className="text-foreground">
-          {value ? value : <span className="text-muted-foreground">{empty}</span>}
+        <span>
+          {value ? value : <span className="opacity-60">{empty}</span>}
         </span>
       </div>
     </div>

@@ -2,12 +2,28 @@
 
 import { useMemo, useState, useTransition } from "react"
 import { format } from "date-fns"
-import { Pencil, Plus, Search } from "lucide-react"
+import {
+  Building2,
+  CalendarDays,
+  CircleDollarSign,
+  Mail,
+  MapPin,
+  Pencil,
+  Phone,
+  Plus,
+  Search,
+  User,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  PreviewCard,
+  PreviewCardContent,
+  PreviewCardTrigger,
+} from "@/components/ui/preview-card"
 import {
   Table,
   TableBody,
@@ -155,61 +171,97 @@ export function CustomersTable({
               </TableRow>
             ) : (
               filtered.map((c) => (
-                <TableRow key={c.id} className={!c.active ? "opacity-60" : ""}>
-                  <TableCell className="font-medium">
-                    <div className="flex flex-col">
-                      <span>{c.name}</span>
-                      {c.email ? (
-                        <span className="text-xs text-muted-foreground">
-                          {c.email}
-                        </span>
-                      ) : null}
-                    </div>
-                  </TableCell>
-                  <TableCell>{c.contact_name ?? "—"}</TableCell>
-                  <TableCell>{c.phone ?? "—"}</TableCell>
-                  <TableCell className="text-right">
-                    Net {c.payment_terms_days}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatCAD(c.credit_limit_cad)}
-                  </TableCell>
-                  <TableCell>
-                    {c.active ? (
-                      <Badge>Active</Badge>
-                    ) : (
-                      <Badge variant="outline">Archived</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {format(new Date(c.created_at), "PP")}
-                  </TableCell>
-                  {canEdit ? (
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setEditing(c)}
-                        >
-                          <Pencil className="size-3.5" /> Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant={c.active ? "destructive" : "outline"}
-                          disabled={pendingId === c.id}
-                          onClick={() => handleToggleActive(c)}
-                        >
-                          {pendingId === c.id
-                            ? "Working…"
-                            : c.active
-                              ? "Archive"
-                              : "Restore"}
-                        </Button>
+                <PreviewCard key={c.id}>
+                  <PreviewCardTrigger
+                    delay={350}
+                    closeDelay={120}
+                    render={
+                      <TableRow
+                        tabIndex={canEdit ? 0 : -1}
+                        onClick={canEdit ? () => setEditing(c) : undefined}
+                        onKeyDown={
+                          canEdit
+                            ? (e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault()
+                                  setEditing(c)
+                                }
+                              }
+                            : undefined
+                        }
+                        className={cnRow(c.active, canEdit)}
+                      />
+                    }
+                  >
+                    <TableCell className="font-medium">
+                      <div className="flex flex-col">
+                        <span>{c.name}</span>
+                        {c.email ? (
+                          <span className="text-xs text-muted-foreground">
+                            {c.email}
+                          </span>
+                        ) : null}
                       </div>
                     </TableCell>
-                  ) : null}
-                </TableRow>
+                    <TableCell>{c.contact_name ?? "—"}</TableCell>
+                    <TableCell>{c.phone ?? "—"}</TableCell>
+                    <TableCell className="text-right">
+                      Net {c.payment_terms_days}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {formatCAD(c.credit_limit_cad)}
+                    </TableCell>
+                    <TableCell>
+                      {c.active ? (
+                        <Badge>Active</Badge>
+                      ) : (
+                        <Badge variant="outline">Archived</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {format(new Date(c.created_at), "PP")}
+                    </TableCell>
+                    {canEdit ? (
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setEditing(c)
+                            }}
+                          >
+                            <Pencil className="size-3.5" /> Edit
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant={c.active ? "destructive" : "outline"}
+                            disabled={pendingId === c.id}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleToggleActive(c)
+                            }}
+                          >
+                            {pendingId === c.id
+                              ? "Working…"
+                              : c.active
+                                ? "Archive"
+                                : "Restore"}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    ) : null}
+                  </PreviewCardTrigger>
+                  <PreviewCardContent
+                    side="left"
+                    align="start"
+                    sideOffset={16}
+                    className="w-[340px]"
+                  >
+                    <CustomerPreview customer={c} />
+                  </PreviewCardContent>
+                </PreviewCard>
               ))
             )}
           </TableBody>
@@ -234,5 +286,126 @@ export function CustomersTable({
         />
       ) : null}
     </>
+  )
+}
+
+function cnRow(active: boolean, clickable: boolean): string {
+  const base = "transition-colors hover:bg-muted/40"
+  const dim = active ? "" : "opacity-60"
+  const focus =
+    "focus-visible:bg-muted/40 focus-visible:outline-none cursor-pointer"
+  return [base, dim, clickable ? focus : ""].filter(Boolean).join(" ")
+}
+
+function CustomerPreview({ customer }: { customer: CustomerRow }) {
+  return (
+    <div className="flex flex-col">
+      <div className="flex items-start justify-between gap-3 border-b border-white/10 bg-white/5 px-4 py-3">
+        <div className="flex flex-col gap-1">
+          <span className="text-sm font-semibold">{customer.name}</span>
+          {customer.contact_name ? (
+            <span className="text-xs opacity-70">{customer.contact_name}</span>
+          ) : null}
+        </div>
+        {customer.active ? (
+          <Badge>Active</Badge>
+        ) : (
+          <Badge variant="outline">Archived</Badge>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-3 px-4 py-3">
+        <div className="flex flex-col gap-2 text-xs">
+          <Row icon={<User className="size-3.5" />} label="Contact">
+            <span>{customer.contact_name ?? "—"}</span>
+          </Row>
+          <Row icon={<Phone className="size-3.5" />} label="Phone">
+            <span>{customer.phone ?? "—"}</span>
+          </Row>
+          <Row icon={<Mail className="size-3.5" />} label="Email">
+            <span className="break-all">{customer.email ?? "—"}</span>
+          </Row>
+          {customer.address ? (
+            <Row icon={<MapPin className="size-3.5" />} label="Address">
+              <span className="whitespace-pre-line">{customer.address}</span>
+            </Row>
+          ) : null}
+          {customer.billing_address &&
+          customer.billing_address !== customer.address ? (
+            <Row icon={<Building2 className="size-3.5" />} label="Billing">
+              <span className="whitespace-pre-line">
+                {customer.billing_address}
+              </span>
+            </Row>
+          ) : null}
+        </div>
+
+        <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+          <Field
+            icon={<CalendarDays className="size-3.5" />}
+            label="Terms"
+            value={`Net ${customer.payment_terms_days}`}
+          />
+          <Field
+            icon={<CircleDollarSign className="size-3.5" />}
+            label="Credit limit"
+            value={formatCAD(customer.credit_limit_cad)}
+          />
+        </div>
+
+        {customer.notes ? (
+          <div className="flex flex-col gap-0.5 rounded-md bg-white/5 px-2.5 py-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">
+              Notes
+            </span>
+            <span className="line-clamp-3 text-xs">{customer.notes}</span>
+          </div>
+        ) : null}
+      </div>
+    </div>
+  )
+}
+
+function Row({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-0.5 opacity-60">{icon}</span>
+      <div className="flex flex-1 flex-col gap-0.5">
+        <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">
+          {label}
+        </span>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function Field({
+  icon,
+  label,
+  value,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string | null | undefined
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="mt-0.5 opacity-60">{icon}</span>
+      <div className="flex flex-1 flex-col gap-0.5 leading-tight">
+        <span className="text-[10px] font-semibold uppercase tracking-wider opacity-60">
+          {label}
+        </span>
+        <span>{value ?? "—"}</span>
+      </div>
+    </div>
   )
 }
