@@ -125,9 +125,7 @@ export async function updateEmployee(
   return { ok: true }
 }
 
-type SetPasswordResult =
-  | { ok: true; emailSent: boolean }
-  | { error: FieldErrors }
+type SetPasswordResult = { ok: true } | { error: FieldErrors }
 
 export async function setEmployeePassword(
   input: SetPasswordInput,
@@ -164,28 +162,12 @@ export async function setEmployeePassword(
     }
   }
 
-  // Notification: trigger Supabase's recovery email so the user knows their
-  // password changed. They can either use the new password (admin shares it
-  // out-of-band) or click the recovery link to set their own. The email body
-  // uses Supabase's default "Reset password" template; customize it under
-  // Authentication -> Email Templates -> Reset Password if a custom
-  // "Your password was changed" copy is wanted later.
-  let emailSent = false
-  const targetEmail = updated.user.email
-  if (targetEmail) {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
-    const userClient = await createClient()
-    const { error: emailErr } = await userClient.auth.resetPasswordForEmail(
-      targetEmail,
-      {
-        redirectTo: siteUrl ? `${siteUrl}/auth/callback` : undefined,
-      },
-    )
-    emailSent = !emailErr
-  }
+  // The "Your password was changed" notification is sent automatically by
+  // Supabase Auth when the password changes. It uses the template defined
+  // at supabase/templates/password_changed.html. No manual email send.
 
   revalidatePath("/admin/employees")
-  return { ok: true, emailSent }
+  return { ok: true }
 }
 
 export async function deleteEmployee(id: string): Promise<ToggleResult> {

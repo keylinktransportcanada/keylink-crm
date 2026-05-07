@@ -334,9 +334,7 @@ function ChangePasswordView({
         return
       }
       toast.success(
-        result.emailSent
-          ? `Password reset. ${employee.full_name || "The user"} has been notified by email.`
-          : "Password reset. Email could not be sent — share the new password directly.",
+        `Password reset. ${employee.full_name || "The user"} has been notified by email.`,
       )
       onClose()
     })
