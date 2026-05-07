@@ -15,6 +15,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form"
+import { cn } from "@/lib/utils"
 
 import { sendMagicLink, signInWithPassword } from "./actions"
 import {
@@ -23,6 +24,17 @@ import {
   type LoginInput,
   type MagicLinkInput,
 } from "@/lib/schemas/auth"
+
+const DARK_INPUT =
+  "bg-white/5 border-white/15 text-brand-cloud placeholder:text-brand-cloud/40 focus-visible:border-brand-teal focus-visible:ring-brand-teal/40 hover:border-white/25"
+
+const DARK_LABEL = "text-brand-cloud/80"
+
+const PRIMARY_CTA =
+  "bg-brand-gold text-brand-navy hover:bg-brand-gold-light focus-visible:ring-brand-gold/40 font-semibold"
+
+const GHOST_OUTLINE_DARK =
+  "border-white/15 bg-transparent text-brand-cloud hover:bg-white/5 hover:text-brand-cloud"
 
 type Mode = "password" | "magic-link"
 
@@ -70,15 +82,24 @@ function PasswordForm({ onForgot }: { onForgot: () => void }) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="flex flex-col gap-4"
+      >
         <FormField
           control={form.control}
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel className={DARK_LABEL}>Email</FormLabel>
               <FormControl>
-                <Input type="email" autoComplete="email" autoFocus {...field} />
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  autoFocus
+                  className={DARK_INPUT}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -90,23 +111,33 @@ function PasswordForm({ onForgot }: { onForgot: () => void }) {
           render={({ field }) => (
             <FormItem>
               <div className="flex items-baseline justify-between">
-                <FormLabel>Password</FormLabel>
+                <FormLabel className={DARK_LABEL}>Password</FormLabel>
                 <button
                   type="button"
                   onClick={onForgot}
-                  className="text-xs text-muted-foreground hover:text-foreground hover:underline"
+                  className="text-xs text-brand-cloud/50 hover:text-brand-teal-light hover:underline"
                 >
                   Forgot password?
                 </button>
               </div>
               <FormControl>
-                <Input type="password" autoComplete="current-password" {...field} />
+                <Input
+                  type="password"
+                  autoComplete="current-password"
+                  className={DARK_INPUT}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button type="submit" disabled={pending} size="lg" className="w-full">
+        <Button
+          type="submit"
+          disabled={pending}
+          size="lg"
+          className={cn("w-full", PRIMARY_CTA)}
+        >
           {pending ? "Signing in…" : "Sign in"}
         </Button>
       </form>
@@ -141,8 +172,11 @@ function MagicLinkForm({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
-        <p className="text-sm text-muted-foreground">
+      <form
+        onSubmit={form.handleSubmit(onSubmit)}
+        className="flex flex-col gap-4"
+      >
+        <p className="text-sm text-brand-cloud/60">
           Enter the email associated with your account. If it exists, we&apos;ll
           send a one-time sign-in link.
         </p>
@@ -151,9 +185,15 @@ function MagicLinkForm({
           name="email"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Email</FormLabel>
+              <FormLabel className={DARK_LABEL}>Email</FormLabel>
               <FormControl>
-                <Input type="email" autoComplete="email" autoFocus {...field} />
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  autoFocus
+                  className={DARK_INPUT}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -165,11 +205,16 @@ function MagicLinkForm({
             variant="outline"
             size="lg"
             onClick={onBack}
-            className="flex-1"
+            className={cn("flex-1", GHOST_OUTLINE_DARK)}
           >
             Back
           </Button>
-          <Button type="submit" disabled={pending} size="lg" className="flex-1">
+          <Button
+            type="submit"
+            disabled={pending}
+            size="lg"
+            className={cn("flex-1", PRIMARY_CTA)}
+          >
             {pending ? "Sending…" : "Send link"}
           </Button>
         </div>
@@ -180,15 +225,20 @@ function MagicLinkForm({
 
 function MagicLinkSent({ onBack }: { onBack: () => void }) {
   return (
-    <div className="flex flex-col gap-4 rounded-md border border-border bg-muted/30 p-4">
+    <div className="flex flex-col gap-4 rounded-md border border-brand-teal/30 bg-brand-teal/5 p-4">
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium">Check your inbox</p>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm font-medium text-brand-cloud">Check your inbox</p>
+        <p className="text-sm text-brand-cloud/65">
           If an account exists for that email, a sign-in link has been sent. The
           link is valid for one hour.
         </p>
       </div>
-      <Button type="button" variant="outline" onClick={onBack}>
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onBack}
+        className={GHOST_OUTLINE_DARK}
+      >
         Back to sign in
       </Button>
     </div>
