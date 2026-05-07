@@ -85,8 +85,26 @@ export function AppSidebar({ role }: { role: Role }) {
               </Link>
             )
           })}
+
+          <div
+            className={cn(
+              "mt-auto flex items-center gap-2 px-5 pt-4 whitespace-nowrap",
+              "opacity-0 transition-opacity duration-150",
+              "group-hover:opacity-100 group-hover:delay-100",
+            )}
+            aria-hidden="true"
+          >
+            <span className="text-[11px] font-mono font-medium tracking-tight text-brand-cloud/55">
+              v{APP_VERSION}
+            </span>
+            <span className="rounded-sm bg-brand-teal/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-brand-teal-light">
+              Beta
+            </span>
+          </div>
         </nav>
       </div>
     </>
   )
 }
+
+const APP_VERSION = "0.1.0"
