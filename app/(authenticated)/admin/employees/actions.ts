@@ -123,6 +123,26 @@ export async function updateEmployee(
   return { ok: true }
 }
 
+export async function deleteEmployee(id: string): Promise<ToggleResult> {
+  const actor = await requireRole(["admin"])
+
+  if (id === actor.id) {
+    return { error: "You can't delete your own account." }
+  }
+
+  // Deleting an auth.users row cascades to profiles via the FK on
+  // profiles.id (ON DELETE CASCADE). audit_log entries are preserved with
+  // actor_id set to NULL because that FK is ON DELETE SET NULL.
+  const admin = createAdminClient()
+  const { error } = await admin.auth.admin.deleteUser(id)
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath("/admin/employees")
+  return { ok: true }
+}
+
 export async function setEmployeeActive(
   id: string,
   active: boolean,

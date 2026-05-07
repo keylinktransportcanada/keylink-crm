@@ -1,9 +1,11 @@
+import { requireRole } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/server"
 
 import { AddEmployeeButton } from "./add-employee-button"
 import { EmployeesTable, type EmployeeRow } from "./employees-table"
 
 export default async function EmployeesPage() {
+  const me = await requireRole(["admin"])
   const supabase = await createClient()
   const { data, error } = await supabase
     .from("profiles")
@@ -32,7 +34,7 @@ export default async function EmployeesPage() {
           Couldn&apos;t load employees: {error.message}
         </div>
       ) : (
-        <EmployeesTable employees={employees} />
+        <EmployeesTable employees={employees} currentUserId={me.id} />
       )}
     </div>
   )

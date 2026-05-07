@@ -34,8 +34,10 @@ export type EmployeeRow = {
 
 export function EmployeesTable({
   employees,
+  currentUserId,
 }: {
   employees: EmployeeRow[]
+  currentUserId: string
 }) {
   const [editing, setEditing] = useState<EmployeeRow | null>(null)
   const [pendingId, setPendingId] = useState<string | null>(null)
@@ -148,6 +150,7 @@ export function EmployeesTable({
 
       <EditEmployeeDialog
         employee={editing}
+        currentUserId={currentUserId}
         onClose={() => setEditing(null)}
       />
     </>
