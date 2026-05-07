@@ -58,6 +58,14 @@ const STATUS_TONE: Record<TrailerRow["status"], string> = {
   retired: "bg-muted text-muted-foreground",
 }
 
+// Re-tinted for the dark liquid-glass preview surface.
+const STATUS_TONE_GLASS: Record<TrailerRow["status"], string> = {
+  active: "bg-emerald-500/25 text-emerald-100",
+  maintenance: "bg-amber-500/25 text-amber-100",
+  out_of_service: "bg-red-500/30 text-red-100",
+  retired: "bg-white/10 text-brand-cloud/70",
+}
+
 export function TrailersTable({
   trailers,
   canEdit,
@@ -262,7 +270,10 @@ function TrailerPreview({
           </span>
         </div>
         <Badge
-          className={cn("border-transparent", STATUS_TONE[trailer.status])}
+          className={cn(
+            "border-transparent",
+            STATUS_TONE_GLASS[trailer.status],
+          )}
         >
           {EQUIPMENT_STATUS_LABEL[trailer.status]}
         </Badge>

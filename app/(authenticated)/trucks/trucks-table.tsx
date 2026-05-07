@@ -57,6 +57,14 @@ const STATUS_TONE: Record<TruckRow["status"], string> = {
   retired: "bg-muted text-muted-foreground",
 }
 
+// Re-tinted for the dark liquid-glass preview surface.
+const STATUS_TONE_GLASS: Record<TruckRow["status"], string> = {
+  active: "bg-emerald-500/25 text-emerald-100",
+  maintenance: "bg-amber-500/25 text-amber-100",
+  out_of_service: "bg-red-500/30 text-red-100",
+  retired: "bg-white/10 text-brand-cloud/70",
+}
+
 export function TrucksTable({ trucks }: { trucks: TruckRow[] }) {
   const router = useRouter()
   const today = todayInToronto()
@@ -196,11 +204,11 @@ export function TrucksTable({ trucks }: { trucks: TruckRow[] }) {
 
 function TruckPreview({ truck, today }: { truck: TruckRow; today: string }) {
   const expiries = [
-    { label: "Plate", date: truck.plate_expiry },
-    { label: "Insurance", date: truck.insurance_expiry },
-    { label: "IFTA", date: truck.ifta_decal_expiry },
-    { label: "Safety", date: truck.safety_sticker_expiry },
-    { label: "CVOR", date: truck.cvor_certificate_expiry },
+    { label: "Plate expiry", date: truck.plate_expiry },
+    { label: "Insurance expiry", date: truck.insurance_expiry },
+    { label: "IFTA expiry", date: truck.ifta_decal_expiry },
+    { label: "Safety expiry", date: truck.safety_sticker_expiry },
+    { label: "CVOR expiry", date: truck.cvor_certificate_expiry },
   ]
 
   return (
@@ -219,7 +227,10 @@ function TruckPreview({ truck, today }: { truck: TruckRow; today: string }) {
           ) : null}
         </div>
         <Badge
-          className={cn("border-transparent", STATUS_TONE[truck.status])}
+          className={cn(
+            "border-transparent",
+            STATUS_TONE_GLASS[truck.status],
+          )}
         >
           {EQUIPMENT_STATUS_LABEL[truck.status]}
         </Badge>

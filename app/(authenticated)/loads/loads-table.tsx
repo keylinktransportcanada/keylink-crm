@@ -87,6 +87,22 @@ const STATUS_TONE: Record<LoadListRow["status"], string> = {
   cancelled: "bg-red-500/15 text-red-700 dark:text-red-300",
 }
 
+// Same statuses re-tinted for the dark liquid-glass preview surface where
+// the light-context shades disappear into the navy backdrop.
+const STATUS_TONE_GLASS: Record<LoadListRow["status"], string> = {
+  draft: "bg-white/10 text-brand-cloud/80",
+  assigned: "bg-blue-500/25 text-blue-100",
+  dispatched: "bg-blue-500/25 text-blue-100",
+  at_pickup: "bg-amber-500/25 text-amber-100",
+  loaded: "bg-amber-500/25 text-amber-100",
+  in_transit: "bg-indigo-500/25 text-indigo-100",
+  at_delivery: "bg-amber-500/25 text-amber-100",
+  delivered: "bg-emerald-500/25 text-emerald-100",
+  invoiced: "bg-emerald-500/25 text-emerald-100",
+  paid: "bg-emerald-500/35 text-white",
+  cancelled: "bg-red-500/30 text-red-100",
+}
+
 // "Active loads" = everything except cancelled. Paid loads stay visible so
 // dispatchers can still see them after the run is done; explicit Cancelled
 // filter is available to find archived ones.
@@ -338,7 +354,7 @@ function LoadPreview({ load }: { load: LoadListRow }) {
             <Badge
               className={cn(
                 "border-transparent",
-                STATUS_TONE[load.status],
+                STATUS_TONE_GLASS[load.status],
               )}
             >
               {LOAD_STATUS_LABEL[load.status]}
