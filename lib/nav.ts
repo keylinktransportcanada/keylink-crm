@@ -1,6 +1,8 @@
 import {
   Building2,
+  Container,
   LayoutDashboard,
+  Truck,
   Users,
   type LucideIcon,
 } from "lucide-react"
@@ -25,6 +27,18 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Customers",
     href: "/customers",
     icon: Building2,
+    roles: ["admin", "dispatcher", "accounting"],
+  },
+  {
+    label: "Trucks",
+    href: "/trucks",
+    icon: Truck,
+    roles: ["admin", "dispatcher", "accounting"],
+  },
+  {
+    label: "Trailers",
+    href: "/trailers",
+    icon: Container,
     roles: ["admin", "dispatcher", "accounting"],
   },
   {
