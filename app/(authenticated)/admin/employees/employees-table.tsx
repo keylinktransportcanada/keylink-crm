@@ -14,7 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { ROLE_LABEL, type ROLE_VALUES } from "@/lib/schemas/employees"
+import { RoleBadge } from "@/components/shared/role-badge"
+import { type ROLE_VALUES } from "@/lib/schemas/employees"
 
 import { setEmployeeActive } from "./actions"
 import { EditEmployeeDialog } from "./edit-employee-dialog"
@@ -91,7 +92,7 @@ export function EmployeesTable({
                     {e.employee_id ?? "—"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="secondary">{ROLE_LABEL[e.role]}</Badge>
+                    <RoleBadge role={e.role} />
                   </TableCell>
                   <TableCell>{e.phone ?? "—"}</TableCell>
                   <TableCell>

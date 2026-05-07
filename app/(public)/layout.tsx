@@ -52,8 +52,8 @@ function BrandPanel() {
           <span className="text-brand-teal-light">Keylink.</span>
         </h2>
         <p className="max-w-md text-base leading-relaxed text-brand-cloud/70">
-          The dispatch, driver, and operations cockpit for Keylink Transport —
-          loads, compliance, documents, and accounting in one place.
+          The dispatch, driver, and operations cockpit for Keylink Transport.
+          Loads, compliance, documents, and accounting in one place.
         </p>
       </div>
 

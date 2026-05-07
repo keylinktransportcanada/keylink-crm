@@ -1,5 +1,8 @@
+import { ROLE_META } from "@/components/shared/role-badge"
 import { requireRole, type CurrentProfile } from "@/lib/auth"
+import { ROLE_VALUES } from "@/lib/schemas/employees"
 import { createClient } from "@/lib/supabase/server"
+import { cn } from "@/lib/utils"
 
 export default async function DashboardPage() {
   const profile = await requireRole([
@@ -76,10 +79,15 @@ function greetingForRole(role: CurrentProfile["role"]) {
 
 async function AdminPanel() {
   const supabase = await createClient()
-  const { count, error } = await supabase
+  const { data, count, error } = await supabase
     .from("profiles")
-    .select("*", { count: "exact", head: true })
+    .select("role", { count: "exact" })
     .eq("active", true)
+
+  const counts = (data ?? []).reduce<Record<string, number>>((acc, row) => {
+    acc[row.role] = (acc[row.role] ?? 0) + 1
+    return acc
+  }, {})
 
   return (
     <Card>
@@ -87,9 +95,42 @@ async function AdminPanel() {
       <CardValue>
         {error || count === null ? "—" : count.toLocaleString()}
       </CardValue>
+      <ul className="-mx-1 flex flex-col gap-0.5 pt-1">
+        {ROLE_VALUES.map((role) => {
+          const meta = ROLE_META[role]
+          const Icon = meta.Icon
+          const n = counts[role] ?? 0
+          const empty = n === 0
+          return (
+            <li
+              key={role}
+              className={cn(
+                "flex items-center justify-between gap-3 rounded-md px-1 py-1.5 text-sm",
+                empty && "opacity-50",
+              )}
+            >
+              <span className="flex items-center gap-2.5">
+                <Icon
+                  className={cn("size-4 shrink-0", meta.iconColor)}
+                  aria-hidden="true"
+                />
+                <span className="font-medium text-foreground">
+                  {meta.label}
+                </span>
+              </span>
+              <span className="font-semibold tabular-nums text-foreground">
+                {n}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
       <CardHelp>
         Includes you. Manage employees from the{" "}
-        <a className="font-medium text-brand-teal underline-offset-4 hover:underline" href="/admin/employees">
+        <a
+          className="font-medium text-brand-teal underline-offset-4 hover:underline"
+          href="/admin/employees"
+        >
           Employees
         </a>{" "}
         page.
