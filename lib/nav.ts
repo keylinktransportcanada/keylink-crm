@@ -1,4 +1,9 @@
-import { LayoutDashboard, Users, type LucideIcon } from "lucide-react"
+import {
+  Building2,
+  LayoutDashboard,
+  Users,
+  type LucideIcon,
+} from "lucide-react"
 
 import type { Role } from "@/lib/auth"
 
@@ -9,14 +14,18 @@ export type NavItem = {
   roles: Role[]
 }
 
-// Phase 1 nav: only routes that actually exist. Later phases will append
-// loads, customers, trucks, documents, messages, etc.
 export const NAV_ITEMS: NavItem[] = [
   {
     label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
     roles: ["admin", "dispatcher", "driver", "accounting"],
+  },
+  {
+    label: "Customers",
+    href: "/customers",
+    icon: Building2,
+    roles: ["admin", "dispatcher", "accounting"],
   },
   {
     label: "Employees",
