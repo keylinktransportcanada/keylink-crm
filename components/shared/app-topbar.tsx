@@ -80,6 +80,7 @@ export function AppTopbar({ profile }: { profile: CurrentProfile }) {
         open={pickerOpen}
         onOpenChange={setPickerOpen}
         currentName={profile.full_name}
+        currentUrl={profile.avatar_url}
       />
     </header>
   )

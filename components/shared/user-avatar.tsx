@@ -1,16 +1,7 @@
 import Image from "next/image"
 
+import { getDefaultAvatarUrl } from "@/lib/avatars"
 import { cn } from "@/lib/utils"
-
-const NOTIONISTS_URL = "https://api.dicebear.com/9.x/notionists/svg"
-
-export function getDefaultAvatarUrl(seed: string): string {
-  return `${NOTIONISTS_URL}?seed=${encodeURIComponent(seed)}`
-}
-
-export function generateAvatarSeed(): string {
-  return Math.random().toString(36).slice(2, 12)
-}
 
 const SIZE_CLASSES = {
   sm: "size-7",
@@ -45,7 +36,7 @@ export function UserAvatar({
   return (
     <span
       className={cn(
-        "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-teal/10 ring-1 ring-inset ring-white/10",
+        "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-cloud/40 ring-1 ring-inset ring-white/10",
         SIZE_CLASSES[size],
         className,
       )}
