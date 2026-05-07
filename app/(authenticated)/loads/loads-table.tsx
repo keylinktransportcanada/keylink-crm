@@ -291,96 +291,139 @@ export function LoadsTable({ loads }: { loads: LoadListRow[] }) {
               </TableRow>
             ) : (
               filtered.map((l) => (
-                <PreviewCard key={l.id}>
-                  <PreviewCardTrigger
-                    delay={350}
-                    closeDelay={120}
-                    render={
-                      <TableRow
-                        tabIndex={0}
-                        onClick={() => navigateTo(l.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault()
-                            navigateTo(l.id)
-                          }
-                        }}
-                        className="cursor-pointer transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
-                      />
-                    }
-                  >
-                    <TableCell className="font-mono font-medium">
-                      <Link
-                        href={`/loads/${l.id}`}
-                        onClick={(e) => e.stopPropagation()}
-                        className="hover:underline"
-                      >
-                        {l.load_number}
-                      </Link>
-                      {l.is_cross_border ? (
-                        <span
-                          className="ml-2 rounded-sm bg-brand-teal/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-brand-teal-light"
-                          title="Cross-border"
-                        >
-                          CB
-                        </span>
-                      ) : null}
-                    </TableCell>
-                    <TableCell>
-                      <Badge
-                        className={cn(
-                          "border-transparent",
-                          STATUS_TONE[l.status],
-                        )}
-                      >
-                        {LOAD_STATUS_LABEL[l.status]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{l.customer_name ?? "—"}</TableCell>
-                    <TableCell className="text-sm">
-                      <span>
-                        {formatLocation(l.origin_city, l.origin_province)}
-                      </span>
-                      <span className="text-muted-foreground"> → </span>
-                      <span>
-                        {formatLocation(
-                          l.destination_city,
-                          l.destination_province,
-                        )}
-                      </span>
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {formatDate(l.pickup_date)}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {l.driver_name ?? (
-                        <span className="text-muted-foreground italic">
-                          unassigned
-                        </span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <DocsCell documents={l.documents ?? []} />
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {formatCAD(l.total_billed_cad)}
-                    </TableCell>
-                  </PreviewCardTrigger>
-                  <PreviewCardContent
-                    side="left"
-                    align="start"
-                    sideOffset={16}
-                    className="w-[360px]"
-                  >
-                    <LoadPreview load={l} />
-                  </PreviewCardContent>
-                </PreviewCard>
+                <LoadPreviewRow
+                  key={l.id}
+                  load={l}
+                  onNavigate={() => navigateTo(l.id)}
+                />
               ))
             )}
           </TableBody>
         </Table>
       </div>
     </>
+  )
+}
+
+function LoadPreviewRow({
+  load,
+  onNavigate,
+}: {
+  load: LoadListRow
+  onNavigate: () => void
+}) {
+  // Captures the mouse position when hover begins so the preview card can
+  // anchor near the cursor instead of always to the left/right of the row.
+  // Re-render is fine — base-ui's positioner re-evaluates the anchor each
+  // render and we only set it once per hover entry.
+  const [anchorRect, setAnchorRect] = useState<{ x: number; y: number } | null>(
+    null,
+  )
+
+  const virtualAnchor = useMemo(() => {
+    if (!anchorRect) return undefined
+    const { x, y } = anchorRect
+    // 1×1 rect at the cursor — Floating UI happily anchors to a virtual
+    // element with this shape.
+    return {
+      getBoundingClientRect: () => ({
+        x,
+        y,
+        top: y,
+        bottom: y,
+        left: x,
+        right: x,
+        width: 0,
+        height: 0,
+        toJSON: () => ({}),
+      }),
+    }
+  }, [anchorRect])
+
+  return (
+    <PreviewCard>
+      <PreviewCardTrigger
+        delay={350}
+        closeDelay={120}
+        render={
+          <TableRow
+            tabIndex={0}
+            onMouseEnter={(e) =>
+              setAnchorRect({ x: e.clientX, y: e.clientY })
+            }
+            onClick={onNavigate}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault()
+                onNavigate()
+              }
+            }}
+            className="cursor-pointer transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
+          />
+        }
+      >
+        <TableCell className="font-mono font-medium">
+          <Link
+            href={`/loads/${load.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="hover:underline"
+          >
+            {load.load_number}
+          </Link>
+          {load.is_cross_border ? (
+            <span
+              className="ml-2 rounded-sm bg-brand-teal/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-brand-teal-light"
+              title="Cross-border"
+            >
+              CB
+            </span>
+          ) : null}
+        </TableCell>
+        <TableCell>
+          <Badge
+            className={cn("border-transparent", STATUS_TONE[load.status])}
+          >
+            {LOAD_STATUS_LABEL[load.status]}
+          </Badge>
+        </TableCell>
+        <TableCell>{load.customer_name ?? "—"}</TableCell>
+        <TableCell className="text-sm">
+          <span>
+            {formatLocation(load.origin_city, load.origin_province)}
+          </span>
+          <span className="text-muted-foreground"> → </span>
+          <span>
+            {formatLocation(
+              load.destination_city,
+              load.destination_province,
+            )}
+          </span>
+        </TableCell>
+        <TableCell className="text-sm">
+          {formatDate(load.pickup_date)}
+        </TableCell>
+        <TableCell className="text-sm">
+          {load.driver_name ?? (
+            <span className="text-muted-foreground italic">unassigned</span>
+          )}
+        </TableCell>
+        <TableCell>
+          <DocsCell documents={load.documents ?? []} />
+        </TableCell>
+        <TableCell className="text-right font-medium">
+          {formatCAD(load.total_billed_cad)}
+        </TableCell>
+      </PreviewCardTrigger>
+      <PreviewCardContent
+        anchor={virtualAnchor}
+        side="bottom"
+        align="start"
+        sideOffset={14}
+        className="w-[420px]"
+      >
+        <LoadPreview load={load} />
+      </PreviewCardContent>
+    </PreviewCard>
   )
 }
 
@@ -633,21 +676,31 @@ function DocsSection({ documents }: { documents: LoadDocPreview[] }) {
           {documents.length}
         </span>
       </div>
-      <div className="grid grid-cols-4 gap-2">
-        {visible.map((d) => (
-          <DocThumb
-            key={d.id}
-            doc={d}
-            isHovered={hoveredId === d.id}
-            onMouseEnter={() => setHoveredId(d.id)}
-            onMouseLeave={() => setHoveredId(null)}
-          />
-        ))}
+      {/* Two-column layout: 2x2 thumbnail grid on the left, larger preview
+          on the right that pops in when a thumb is hovered. Stays inside
+          the parent popup so mouse never leaves it. */}
+      <div className="grid grid-cols-[112px_1fr] gap-2">
+        <div className="grid grid-cols-2 gap-1.5">
+          {visible.map((d) => (
+            <DocThumb
+              key={d.id}
+              doc={d}
+              isHovered={hoveredId === d.id}
+              onMouseEnter={() => setHoveredId(d.id)}
+              onMouseLeave={() => setHoveredId(null)}
+            />
+          ))}
+        </div>
+        <div className="min-w-0">
+          {hovered ? (
+            <DocLargePreview doc={hovered} />
+          ) : (
+            <div className="flex h-full min-h-[140px] items-center justify-center rounded-lg border border-dashed border-white/10 bg-white/[0.03] px-3 text-center text-[10px] text-brand-cloud/50">
+              Hover a document to preview
+            </div>
+          )}
+        </div>
       </div>
-      {/* Inline expand area — keeps the parent preview popup open since
-          mouse never leaves it. Renders the big preview just below the
-          thumb row when one is hovered. */}
-      {hovered ? <DocLargePreview doc={hovered} /> : null}
     </div>
   )
 }

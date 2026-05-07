@@ -28,12 +28,13 @@ function PreviewCardContent({
   alignOffset = 0,
   side = "right",
   sideOffset = 12,
+  anchor,
   children,
   ...props
 }: PreviewCardPrimitive.Popup.Props &
   Pick<
     PreviewCardPrimitive.Positioner.Props,
-    "align" | "alignOffset" | "side" | "sideOffset"
+    "align" | "alignOffset" | "side" | "sideOffset" | "anchor"
   >) {
   return (
     <PreviewCardPrimitive.Portal>
@@ -42,6 +43,7 @@ function PreviewCardContent({
         alignOffset={alignOffset}
         side={side}
         sideOffset={sideOffset}
+        anchor={anchor}
         className="isolate z-50"
       >
         <PreviewCardPrimitive.Popup
