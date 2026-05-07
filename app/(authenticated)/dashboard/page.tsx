@@ -287,52 +287,60 @@ async function DispatchView({
 
   return (
     <div className="flex flex-col gap-6">
-      <OperationsChart
-        series={series}
-        previousTotalRevenue={previous.revenue}
-        previousTotalCount={previous.count}
-        title="Operations"
-      />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <OperationsChart
+          series={series}
+          previousTotalRevenue={previous.revenue}
+          previousTotalCount={previous.count}
+          title="Operations"
+        />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-        <Kpi
-          icon={Activity}
-          label="In progress"
-          value={inProgress.length}
-          accent="indigo"
-          href="/loads"
-        />
-        <Kpi
-          icon={unassigned.length > 0 ? AlertTriangle : CircleCheck}
-          label="Unassigned"
-          value={unassigned.length}
-          accent={unassigned.length > 0 ? "red" : "muted"}
-          href="/loads"
-        />
-        <Kpi
-          icon={CalendarClock}
-          label="Pickups today"
-          value={pickupsToday.length}
-          accent="amber"
-        />
-        <Kpi
-          icon={PackageCheck}
-          label="Delivered today"
-          value={deliveredToday.length}
-          accent="emerald"
-        />
-        <Kpi
-          icon={UserCheck}
-          label="Active drivers"
-          value={activeDriversCount ?? 0}
-          accent="blue"
-        />
-        <Kpi
-          icon={TruckIcon}
-          label="Available trucks"
-          value={availableTrucksCount ?? 0}
-          accent="blue"
-        />
+        <div className="grid auto-rows-fr grid-cols-2 gap-3">
+          <Kpi
+            compact
+            icon={Activity}
+            label="In progress"
+            value={inProgress.length}
+            accent="indigo"
+            href="/loads"
+          />
+          <Kpi
+            compact
+            icon={unassigned.length > 0 ? AlertTriangle : CircleCheck}
+            label="Unassigned"
+            value={unassigned.length}
+            accent={unassigned.length > 0 ? "red" : "muted"}
+            href="/loads"
+          />
+          <Kpi
+            compact
+            icon={CalendarClock}
+            label="Pickups today"
+            value={pickupsToday.length}
+            accent="amber"
+          />
+          <Kpi
+            compact
+            icon={PackageCheck}
+            label="Delivered today"
+            value={deliveredToday.length}
+            accent="emerald"
+          />
+          <Kpi
+            compact
+            icon={UserCheck}
+            label="Active drivers"
+            value={activeDriversCount ?? 0}
+            accent="blue"
+          />
+          <Kpi
+            compact
+            icon={TruckIcon}
+            label="Available trucks"
+            value={availableTrucksCount ?? 0}
+            accent="blue"
+          />
+        </div>
       </div>
 
       {crossingsToday.length > 0 ? (
@@ -518,38 +526,44 @@ async function AccountingView() {
 
   return (
     <div className="flex flex-col gap-6">
-      <OperationsChart
-        series={series}
-        previousTotalRevenue={previous.revenue}
-        previousTotalCount={previous.count}
-        title="Revenue"
-      />
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <OperationsChart
+          series={series}
+          previousTotalRevenue={previous.revenue}
+          previousTotalCount={previous.count}
+          title="Revenue"
+        />
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Kpi
-          icon={FileText}
-          label="Awaiting invoice"
-          value={queue.length}
-          accent={queue.length > 0 ? "amber" : "muted"}
-        />
-        <Kpi
-          icon={CircleDollarSign}
-          label="A/R outstanding"
-          value={formatCAD(arOutstanding)}
-          accent="indigo"
-        />
-        <Kpi
-          icon={TrendingUp}
-          label="Revenue this month"
-          value={formatCAD(revenueThisMonth)}
-          accent="emerald"
-        />
-        <Kpi
-          icon={BadgeCheck}
-          label="Paid this month"
-          value={formatCAD(paidThisMonth)}
-          accent="emerald"
-        />
+        <div className="grid auto-rows-fr grid-cols-2 gap-3">
+          <Kpi
+            compact
+            icon={FileText}
+            label="Awaiting invoice"
+            value={queue.length}
+            accent={queue.length > 0 ? "amber" : "muted"}
+          />
+          <Kpi
+            compact
+            icon={CircleDollarSign}
+            label="A/R outstanding"
+            value={formatCAD(arOutstanding)}
+            accent="indigo"
+          />
+          <Kpi
+            compact
+            icon={TrendingUp}
+            label="Revenue this month"
+            value={formatCAD(revenueThisMonth)}
+            accent="emerald"
+          />
+          <Kpi
+            compact
+            icon={BadgeCheck}
+            label="Paid this month"
+            value={formatCAD(paidThisMonth)}
+            accent="emerald"
+          />
+        </div>
       </div>
 
       <section className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-5">
@@ -848,12 +862,14 @@ function Kpi({
   value,
   accent,
   href,
+  compact = false,
 }: {
   icon?: LucideIcon
   label: string
   value: number | string
   accent: keyof typeof ACCENT_TONE
   href?: string
+  compact?: boolean
 }) {
   const inner = (
     <>
@@ -862,18 +878,20 @@ function Kpi({
         {Icon ? (
           <span
             className={cn(
-              "inline-flex size-7 shrink-0 items-center justify-center rounded-lg",
+              "inline-flex shrink-0 items-center justify-center rounded-lg",
+              compact ? "size-6" : "size-7",
               ICON_BG[accent],
             )}
             aria-hidden="true"
           >
-            <Icon className="size-4" />
+            <Icon className={compact ? "size-3.5" : "size-4"} />
           </span>
         ) : null}
       </div>
       <span
         className={cn(
-          "font-display text-3xl tracking-wide tabular-nums",
+          "font-display tracking-wide tabular-nums",
+          compact ? "text-2xl" : "text-3xl",
           ACCENT_TONE[accent],
         )}
       >
@@ -882,8 +900,10 @@ function Kpi({
     </>
   )
 
-  const className =
-    "flex flex-col gap-2 rounded-xl border border-border/70 bg-card p-4 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]"
+  const className = cn(
+    "flex flex-col justify-between gap-1 rounded-xl border border-border/70 bg-card shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]",
+    compact ? "p-3 gap-1.5" : "p-4 gap-2",
+  )
 
   return href ? (
     <Link href={href} className={cn(className, "hover:bg-muted/20")}>

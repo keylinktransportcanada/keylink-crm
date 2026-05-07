@@ -28,8 +28,8 @@ const formatCAD2 = (value: number) =>
     maximumFractionDigits: 0,
   }).format(Math.round(value))
 
-const ROW_HEIGHT = 220
-const PADDING = { top: 16, right: 16, bottom: 28, left: 16 }
+const ROW_HEIGHT = 170
+const PADDING = { top: 12, right: 16, bottom: 24, left: 16 }
 
 export function OperationsChart({
   series,
@@ -65,9 +65,9 @@ export function OperationsChart({
   const valueFormatter = mode === "revenue" ? formatCAD : (n: number) => `${n}`
 
   return (
-    <section className="flex flex-col gap-5 rounded-xl border border-border/70 bg-card p-5 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]">
+    <section className="flex h-full flex-col gap-4 rounded-xl border border-border/70 bg-card p-5 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
           <div className="inline-flex w-fit rounded-full bg-muted/60 p-1 text-xs font-medium">
             <Tab active={mode === "revenue"} onClick={() => setMode("revenue")}>
               Revenue (CAD)
@@ -77,7 +77,7 @@ export function OperationsChart({
             </Tab>
           </div>
           <div className="flex items-end gap-3">
-            <span className="font-display text-4xl tracking-tight text-brand-navy">
+            <span className="font-display text-3xl tracking-tight text-brand-navy">
               {mode === "revenue"
                 ? formatCAD2(currentTotal)
                 : currentTotal.toLocaleString()}
@@ -225,7 +225,7 @@ function Chart({
 
   if (series.length === 0) {
     return (
-      <div className="flex h-[220px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
+      <div className="flex h-[170px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
         No deliveries yet — chart will populate as loads complete.
       </div>
     )
@@ -236,7 +236,7 @@ function Chart({
       <svg
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
-        className="block h-[220px] w-full overflow-visible"
+        className="block h-[170px] w-full overflow-visible"
         onMouseLeave={() => setHover(null)}
       >
         <defs>
