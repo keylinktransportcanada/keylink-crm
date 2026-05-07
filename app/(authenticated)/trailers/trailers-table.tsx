@@ -31,6 +31,7 @@ import {
   nextExpiry,
   relativeExpiryLabel,
   SEVERITY_TONE,
+  SEVERITY_TONE_GLASS,
   severityFor,
   todayInToronto,
 } from "@/lib/expiry"
@@ -339,7 +340,7 @@ function TrailerPreview({
                   key={e.label}
                   className={cn(
                     "flex flex-col gap-0.5 rounded-md border border-transparent px-2 py-1",
-                    SEVERITY_TONE[sev],
+                    SEVERITY_TONE_GLASS[sev],
                   )}
                 >
                   <span className="text-[10px] font-semibold uppercase tracking-wider opacity-70">
