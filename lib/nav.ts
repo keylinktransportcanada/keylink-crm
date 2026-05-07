@@ -25,12 +25,6 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["admin", "dispatcher", "driver", "accounting"],
   },
   {
-    label: "Loads",
-    href: "/loads",
-    icon: Package,
-    roles: ["admin", "dispatcher", "driver", "accounting"],
-  },
-  {
     label: "Customers",
     href: "/customers",
     icon: Building2,
@@ -47,6 +41,12 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/trailers",
     icon: Container,
     roles: ["admin", "dispatcher", "accounting"],
+  },
+  {
+    label: "Loads",
+    href: "/loads",
+    icon: Package,
+    roles: ["admin", "dispatcher", "driver", "accounting"],
   },
   {
     label: "Employees",
