@@ -94,3 +94,33 @@ export function getDefaultAvatar(seed: string): Avatar {
 export function getDefaultAvatarUrl(seed: string): string {
   return getDefaultAvatar(seed).url
 }
+
+// Initials avatars: shown when avatar_url is null. Each user gets a stable
+// background color picked deterministically from their id, so the same
+// person always reads as the same color across the app.
+
+export function getInitials(name: string | null | undefined): string {
+  if (!name?.trim()) return "?"
+  const parts = name.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return "?"
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+}
+
+type InitialsColor = { bg: string; text: string }
+
+const INITIALS_PALETTE: InitialsColor[] = [
+  { bg: "bg-brand-navy", text: "text-brand-cloud" },
+  { bg: "bg-brand-teal", text: "text-brand-cloud" },
+  { bg: "bg-indigo-600", text: "text-indigo-50" },
+  { bg: "bg-emerald-600", text: "text-emerald-50" },
+  { bg: "bg-rose-500", text: "text-rose-50" },
+  { bg: "bg-amber-500", text: "text-amber-50" },
+  { bg: "bg-purple-600", text: "text-purple-50" },
+  { bg: "bg-slate-700", text: "text-slate-100" },
+]
+
+export function getInitialsColor(seed: string): InitialsColor {
+  const idx = fnv1a(seed) % INITIALS_PALETTE.length
+  return INITIALS_PALETTE[idx]
+}

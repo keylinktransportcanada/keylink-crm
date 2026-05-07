@@ -6,12 +6,17 @@ import { createClient } from "@/lib/supabase/server"
 
 type Result = { ok: true } | { error: string }
 
-export async function updateMyAvatar(url: string): Promise<Result> {
-  if (typeof url !== "string" || url.length === 0 || url.length > 500) {
-    return { error: "Invalid avatar URL." }
-  }
-  if (!/^https:\/\//.test(url)) {
-    return { error: "Avatar URL must be HTTPS." }
+export async function updateMyAvatar(
+  url: string | null,
+): Promise<Result> {
+  // null clears the column and the user falls back to initials.
+  if (url !== null) {
+    if (typeof url !== "string" || url.length === 0 || url.length > 500) {
+      return { error: "Invalid avatar URL." }
+    }
+    if (!/^https:\/\//.test(url)) {
+      return { error: "Avatar URL must be HTTPS." }
+    }
   }
 
   const supabase = await createClient()

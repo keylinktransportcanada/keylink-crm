@@ -1,13 +1,13 @@
 import Image from "next/image"
 
-import { getDefaultAvatarUrl } from "@/lib/avatars"
+import { getInitials, getInitialsColor } from "@/lib/avatars"
 import { cn } from "@/lib/utils"
 
 const SIZE_CLASSES = {
-  sm: "size-7",
-  md: "size-9",
-  lg: "size-12",
-  xl: "size-16",
+  sm: "size-7 text-[11px]",
+  md: "size-9 text-xs",
+  lg: "size-12 text-sm",
+  xl: "size-16 text-lg",
 } as const
 
 const PIXEL_SIZE = {
@@ -32,7 +32,25 @@ export function UserAvatar({
   size?: AvatarSize
   className?: string
 }) {
-  const finalUrl = url || getDefaultAvatarUrl(seed)
+  // No URL = use initials with a deterministic background color.
+  if (!url) {
+    const color = getInitialsColor(seed)
+    return (
+      <span
+        aria-label={name ? `${name} avatar` : "Avatar"}
+        className={cn(
+          "inline-flex shrink-0 items-center justify-center rounded-full font-semibold tracking-wide ring-1 ring-inset ring-white/10",
+          SIZE_CLASSES[size],
+          color.bg,
+          color.text,
+          className,
+        )}
+      >
+        {getInitials(name)}
+      </span>
+    )
+  }
+
   return (
     <span
       className={cn(
@@ -42,7 +60,7 @@ export function UserAvatar({
       )}
     >
       <Image
-        src={finalUrl}
+        src={url}
         alt={name ? `${name} avatar` : "Avatar"}
         width={PIXEL_SIZE[size]}
         height={PIXEL_SIZE[size]}

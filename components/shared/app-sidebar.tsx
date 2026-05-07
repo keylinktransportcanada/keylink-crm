@@ -98,7 +98,7 @@ export function AppSidebar({ role }: { role: Role }) {
               v{APP_VERSION}
             </span>
             <span className="rounded-sm bg-brand-teal/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-brand-teal-light">
-              Beta
+              Keylink Beta
             </span>
           </div>
         </nav>

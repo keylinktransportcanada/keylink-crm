@@ -123,6 +123,7 @@ export function AppTopbar({ profile }: { profile: CurrentProfile }) {
       <AvatarPickerDialog
         open={pickerOpen}
         onOpenChange={setPickerOpen}
+        currentUserId={profile.id}
         currentName={profile.full_name}
         currentUrl={profile.avatar_url}
       />
