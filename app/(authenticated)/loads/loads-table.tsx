@@ -87,7 +87,10 @@ const STATUS_TONE: Record<LoadListRow["status"], string> = {
   cancelled: "bg-red-500/15 text-red-700 dark:text-red-300",
 }
 
-const FINAL_STATUSES = new Set<LoadListRow["status"]>(["paid", "cancelled"])
+// "Active loads" = everything except cancelled. Paid loads stay visible so
+// dispatchers can still see them after the run is done; explicit Cancelled
+// filter is available to find archived ones.
+const HIDDEN_BY_ACTIVE_FILTER = new Set<LoadListRow["status"]>(["cancelled"])
 
 const formatCAD = (value: number | null) =>
   value === null
@@ -143,7 +146,7 @@ export function LoadsTable({ loads }: { loads: LoadListRow[] }) {
   const filtered = useMemo(() => {
     const q = filter.trim().toLowerCase()
     return loads.filter((l) => {
-      if (statusFilter === "active" && FINAL_STATUSES.has(l.status))
+      if (statusFilter === "active" && HIDDEN_BY_ACTIVE_FILTER.has(l.status))
         return false
       if (
         statusFilter !== "active" &&
