@@ -14,7 +14,7 @@ const REASON_MESSAGES: Record<string, { title: string; body: string }> = {
     body: "Your account is currently deactivated. Contact your admin to restore access.",
   },
   expired: {
-    title: "Sign-in link expired",
+    title: "Link expired",
     body: "That link is no longer valid. Try requesting a new one.",
   },
 }

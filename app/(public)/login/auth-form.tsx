@@ -17,12 +17,12 @@ import {
 } from "@/components/ui/form"
 import { cn } from "@/lib/utils"
 
-import { sendMagicLink, signInWithPassword } from "./actions"
+import { sendPasswordReset, signInWithPassword } from "./actions"
 import {
   loginSchema,
-  magicLinkSchema,
+  passwordResetRequestSchema,
   type LoginInput,
-  type MagicLinkInput,
+  type PasswordResetRequestInput,
 } from "@/lib/schemas/auth"
 
 const DARK_INPUT =
@@ -36,27 +36,27 @@ const PRIMARY_CTA =
 const GHOST_OUTLINE_DARK =
   "border-white/15 bg-transparent text-brand-cloud hover:bg-white/5 hover:text-brand-cloud"
 
-type Mode = "password" | "magic-link"
+type Mode = "password" | "reset-request"
 
 export function AuthForm() {
   const [mode, setMode] = useState<Mode>("password")
-  const [magicLinkSent, setMagicLinkSent] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
 
   return (
     <div className="flex flex-col gap-4">
       {mode === "password" ? (
-        <PasswordForm onForgot={() => setMode("magic-link")} />
-      ) : magicLinkSent ? (
-        <MagicLinkSent
+        <PasswordForm onForgot={() => setMode("reset-request")} />
+      ) : resetSent ? (
+        <ResetSent
           onBack={() => {
-            setMagicLinkSent(false)
+            setResetSent(false)
             setMode("password")
           }}
         />
       ) : (
-        <MagicLinkForm
+        <ResetRequestForm
           onBack={() => setMode("password")}
-          onSent={() => setMagicLinkSent(true)}
+          onSent={() => setResetSent(true)}
         />
       )}
     </div>
@@ -145,7 +145,7 @@ function PasswordForm({ onForgot }: { onForgot: () => void }) {
   )
 }
 
-function MagicLinkForm({
+function ResetRequestForm({
   onBack,
   onSent,
 }: {
@@ -154,14 +154,14 @@ function MagicLinkForm({
 }) {
   const [pending, startTransition] = useTransition()
 
-  const form = useForm<MagicLinkInput>({
-    resolver: zodResolver(magicLinkSchema),
+  const form = useForm<PasswordResetRequestInput>({
+    resolver: zodResolver(passwordResetRequestSchema),
     defaultValues: { email: "" },
   })
 
-  const onSubmit = (values: MagicLinkInput) => {
+  const onSubmit = (values: PasswordResetRequestInput) => {
     startTransition(async () => {
-      const result = await sendMagicLink(values)
+      const result = await sendPasswordReset(values)
       if (result && "error" in result) {
         form.setError("email", { type: "manual", message: result.error })
         return
@@ -178,7 +178,7 @@ function MagicLinkForm({
       >
         <p className="text-sm text-brand-cloud/60">
           Enter the email associated with your account. If it exists, we&apos;ll
-          send a one-time sign-in link.
+          send a password reset link.
         </p>
         <FormField
           control={form.control}
@@ -215,7 +215,7 @@ function MagicLinkForm({
             size="lg"
             className={cn("flex-1", PRIMARY_CTA)}
           >
-            {pending ? "Sending…" : "Send link"}
+            {pending ? "Sending…" : "Send reset link"}
           </Button>
         </div>
       </form>
@@ -223,14 +223,14 @@ function MagicLinkForm({
   )
 }
 
-function MagicLinkSent({ onBack }: { onBack: () => void }) {
+function ResetSent({ onBack }: { onBack: () => void }) {
   return (
     <div className="flex flex-col gap-4 rounded-md border border-brand-teal/30 bg-brand-teal/5 p-4">
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium text-brand-cloud">Check your inbox</p>
         <p className="text-sm text-brand-cloud/65">
-          If an account exists for that email, a sign-in link has been sent. The
-          link is valid for one hour.
+          If an account exists for that email, a password reset link has been
+          sent. The link is valid for one hour.
         </p>
       </div>
       <Button

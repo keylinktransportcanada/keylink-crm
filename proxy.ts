@@ -17,7 +17,7 @@ export async function proxy(request: NextRequest) {
   // Unauthenticated: allow public paths through, redirect everything else.
   // No `reason` is set here — that's reserved for actual events
   // (signOutAction → "signed-out", inactive check → "inactive",
-  // magic-link callback → "expired").
+  // auth callback failure → "expired").
   if (!user) {
     if (isPublicPath(pathname)) return response
     const url = request.nextUrl.clone()

@@ -5,9 +5,9 @@ import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import {
   loginSchema,
-  magicLinkSchema,
+  passwordResetRequestSchema,
   type LoginInput,
-  type MagicLinkInput,
+  type PasswordResetRequestInput,
 } from "@/lib/schemas/auth"
 
 type ActionResult = { error: string } | { ok: true } | undefined
@@ -31,27 +31,21 @@ export async function signInWithPassword(input: LoginInput): Promise<ActionResul
   redirect("/dashboard")
 }
 
-export async function sendMagicLink(input: MagicLinkInput): Promise<ActionResult> {
-  const parsed = magicLinkSchema.safeParse(input)
+export async function sendPasswordReset(
+  input: PasswordResetRequestInput,
+): Promise<ActionResult> {
+  const parsed = passwordResetRequestSchema.safeParse(input)
   if (!parsed.success) {
     return { error: "Please enter a valid email." }
   }
 
   const supabase = await createClient()
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
-  const { error } = await supabase.auth.signInWithOtp({
-    email: parsed.data.email,
-    options: {
-      shouldCreateUser: false,
-      emailRedirectTo: `${siteUrl}/auth/callback`,
-    },
+  await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+    redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
   })
 
-  if (error) {
-    // Don't reveal whether the account exists; treat as success.
-    return { ok: true }
-  }
-
+  // Don't reveal whether the account exists; treat as success either way.
   return { ok: true }
 }
 

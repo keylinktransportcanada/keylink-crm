@@ -149,7 +149,8 @@ function AddDialog({
           <DialogTitle>Add employee</DialogTitle>
           <DialogDescription>
             A 16-character temporary password is generated and shown once. The
-            new employee can also reset via the magic link on the login page.
+            new employee can also reset via &quot;Forgot password?&quot; on the
+            login page.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
