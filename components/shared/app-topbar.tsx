@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useMemo, useState, useTransition } from "react"
+import { useEffect, useMemo, useState, useTransition } from "react"
 import {
   AlertTriangle,
   Bell,
@@ -47,6 +47,12 @@ const SEVERITY_TAG: Record<Notification["severity"], string> = {
   ok: "bg-emerald-500/20 text-emerald-100",
 }
 
+// Persisted client-side. The bell badge only counts notifications whose id is
+// not already in this set — opening the popover writes the current set of ids
+// here so the badge clears the next render. Cross-device sync isn't worth the
+// schema cost for a transient UI affordance.
+const SEEN_STORAGE_KEY = "keylink:notif-seen-ids"
+
 export function AppTopbar({
   profile,
   notifications,
@@ -57,8 +63,34 @@ export function AppTopbar({
   const [pending, startTransition] = useTransition()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [popoverOpen, setPopoverOpen] = useState(false)
+  // null until hydrated — keeps the SSR markup deterministic (no badge) and
+  // avoids a hydration mismatch on the count.
+  const [seenIds, setSeenIds] = useState<Set<string> | null>(null)
 
-  const { expiries, statusEvents, urgentCount, totalCount } = useMemo(() => {
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(SEEN_STORAGE_KEY)
+      setSeenIds(new Set(raw ? (JSON.parse(raw) as string[]) : []))
+    } catch {
+      setSeenIds(new Set())
+    }
+  }, [])
+
+  // Snapshot every visible notification id when the popover opens — that's
+  // the "checked" moment.
+  useEffect(() => {
+    if (!popoverOpen) return
+    const ids = notifications.map((n) => n.id)
+    setSeenIds(new Set(ids))
+    try {
+      window.localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(ids))
+    } catch {
+      // localStorage unavailable (private mode etc.) — badge will clear in
+      // memory for the session, just won't survive a reload.
+    }
+  }, [popoverOpen, notifications])
+
+  const { expiries, statusEvents, urgentCount, totalCount, unseenCount, unseenUrgent } = useMemo(() => {
     const ex = notifications
       .filter((n) => n.kind === "expiry")
       .sort((a, b) => b.rank - a.rank)
@@ -68,18 +100,38 @@ export function AppTopbar({
     const urgent = ex.filter(
       (n) => n.severity === "expired" || n.severity === "critical",
     ).length
+
+    let unseen = 0
+    let unseenUrg = 0
+    if (seenIds) {
+      for (const n of notifications) {
+        if (seenIds.has(n.id)) continue
+        unseen++
+        if (
+          n.kind === "expiry" &&
+          (n.severity === "expired" || n.severity === "critical")
+        ) {
+          unseenUrg++
+        }
+      }
+    }
+
     return {
       expiries: ex,
       statusEvents: ev,
       urgentCount: urgent,
       totalCount: notifications.length,
+      unseenCount: unseen,
+      unseenUrgent: unseenUrg,
     }
-  }, [notifications])
+  }, [notifications, seenIds])
 
   return (
     <header
       className={cn(
-        "flex items-center justify-between px-4 py-3 lg:px-6",
+        // Sticky so the topbar tracks scroll. z-40 keeps it above the fixed
+        // sidebar rail (z-30) at every scroll position.
+        "sticky top-0 z-40 flex items-center justify-between px-4 py-3 lg:px-6",
         "border-b border-white/10 bg-brand-midnight/70 backdrop-blur-2xl backdrop-saturate-150",
         "[box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_4px_16px_-8px_rgba(10,14,26,0.45)]",
       )}
@@ -93,6 +145,7 @@ export function AppTopbar({
           priority
           className="h-7 w-auto"
         />
+        <AnimatedTagline text="Fleet Management System" />
       </div>
 
       <div className="flex items-center gap-3">
@@ -103,26 +156,28 @@ export function AppTopbar({
                 variant="outline"
                 size="icon-sm"
                 aria-label={
-                  totalCount > 0
-                    ? `Notifications: ${totalCount}`
-                    : "Notifications"
+                  unseenCount > 0
+                    ? `Notifications: ${unseenCount} unread of ${totalCount}`
+                    : totalCount > 0
+                      ? `Notifications: ${totalCount}`
+                      : "Notifications"
                 }
                 className="relative border-white/15 bg-transparent text-brand-cloud hover:bg-white/5 hover:text-brand-cloud"
               />
             }
           >
             <Bell className="size-4" />
-            {totalCount > 0 ? (
+            {unseenCount > 0 ? (
               <span
                 aria-hidden="true"
                 className={cn(
                   "absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px] font-bold leading-none ring-2 ring-brand-midnight",
-                  urgentCount > 0
+                  unseenUrgent > 0
                     ? "bg-red-500 text-white"
                     : "bg-brand-gold text-brand-navy",
                 )}
               >
-                {totalCount > 99 ? "99+" : totalCount}
+                {unseenCount > 99 ? "99+" : unseenCount}
               </span>
             ) : null}
           </PopoverTrigger>
@@ -312,5 +367,37 @@ function NotificationRow({
         <span className="text-xs text-brand-cloud/60">{notification.body}</span>
       </div>
     </Link>
+  )
+}
+
+// Brand tagline next to the logo. Letters rise + un-blur into place with a
+// staggered delay; once settled, a slow gold gradient sweeps through the text
+// on a loop — subtle enough not to distract from the dashboard, lively enough
+// to feel "branded".
+function AnimatedTagline({ text }: { text: string }) {
+  const letters = Array.from(text)
+  return (
+    <div
+      aria-label={text}
+      className="hidden items-center gap-3 sm:flex"
+    >
+      <span aria-hidden="true" className="h-6 w-px bg-white/15" />
+      <span
+        aria-hidden="true"
+        className={cn(
+          "relative inline-flex select-none font-display text-sm uppercase tracking-[0.32em] leading-none text-brand-gold",
+        )}
+      >
+        {letters.map((c, i) => (
+          <span
+            key={i}
+            className="inline-block animate-keylink-rise"
+            style={{ animationDelay: `${i * 28}ms` }}
+          >
+            {c === " " ? " " : c}
+          </span>
+        ))}
+      </span>
+    </div>
   )
 }

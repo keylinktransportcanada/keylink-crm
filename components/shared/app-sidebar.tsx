@@ -48,20 +48,18 @@ export function AppSidebar({ role }: { role: Role }) {
       </nav>
 
       {/* Desktop: an icon rail by default that expands into a full nav on
-          hover. The outer wrapper reserves a fixed 64px column in the layout;
-          a sticky inner wrapper pins the rail to the viewport so the version
-          footer stays visible on tall pages; the inner nav is absolutely
-          positioned within it and grows wider on hover, overlaying content
-          rather than pushing it. */}
-      <div className="relative z-40 hidden w-16 shrink-0 lg:block">
-        {/* Height = viewport minus topbar (~3.5rem) so the nav stops at the
-            viewport edge and the version footer never gets clipped offscreen
-            at scroll-top. dvh adapts to mobile browser chrome too. */}
-        <div className="sticky top-0 relative w-16 h-[calc(100dvh-3.5rem)]">
+          hover. The wrapper reserves a 64px column in the flex row; the nav
+          itself is fixed-positioned to the viewport so it always fills the
+          visible height regardless of scroll or content length. The sticky
+          topbar (z-40) sits above the rail (z-30) so its bottom edge stays
+          drawn over the top of the sidebar at all scroll positions. */}
+      <div className="hidden w-16 shrink-0 lg:block">
         <nav
           aria-label="Primary"
           className={cn(
-            "group absolute inset-y-0 left-0 z-40 isolate flex w-16 flex-col overflow-hidden py-4",
+            // pt-24 = topbar height (~56px) + breathing room so the first
+            // nav item doesn't crowd the bottom edge of the sticky topbar.
+            "group fixed inset-y-0 left-0 z-30 isolate flex w-16 flex-col overflow-hidden pt-24 pb-4",
             "border-r border-white/10 bg-brand-midnight/70 backdrop-blur-2xl backdrop-saturate-150",
             "[box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),inset_-1px_0_0_rgba(255,255,255,0.04),0_8px_24px_-8px_rgba(10,14,26,0.45)]",
             "transition-[width] duration-200 ease-out hover:w-56",
@@ -117,7 +115,6 @@ export function AppSidebar({ role }: { role: Role }) {
             </span>
           </div>
         </nav>
-        </div>
       </div>
     </>
   )
