@@ -26,6 +26,7 @@ import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
 import { ROLE_META } from "@/components/shared/role-badge"
 import { requireRole, type CurrentProfile } from "@/lib/auth"
+import { geocodeCity } from "@/lib/geo/geocode"
 import { ROLE_VALUES } from "@/lib/schemas/employees"
 import {
   LOAD_STATUS_LABEL,
@@ -38,6 +39,7 @@ import {
   OperationsChart,
   type ChartPoint,
 } from "./operations-chart"
+import { OperationsMap, type MapPoint } from "./operations-map"
 
 type LoadStatus = (typeof LOAD_STATUS_VALUES)[number]
 
@@ -91,6 +93,12 @@ function isoDaysAgo(today: string, n: number): string {
   // Subtract n days from a YYYY-MM-DD without crossing into Date timezone weirdness.
   const d = new Date(`${today}T12:00:00Z`)
   d.setUTCDate(d.getUTCDate() - n)
+  return d.toISOString().slice(0, 10)
+}
+
+function isoDaysAhead(today: string, n: number): string {
+  const d = new Date(`${today}T12:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + n)
   return d.toISOString().slice(0, 10)
 }
 
@@ -296,10 +304,31 @@ async function DispatchView({
 
   // Build the live board: top ~12 active loads sorted by pickup date.
   const boardLoads = inProgress.slice(0, 12)
-  const customerIds = [...new Set(boardLoads.map((l) => l.customer_id))]
+
+  // Map shows anything the dispatcher can usefully see today: every active
+  // load plus loads with a pickup within the next 7 days. Client-side filter
+  // chips (Active / Today / Week) narrow this set further.
+  const weekTo = isoDaysAhead(today, 6)
+  const mapEligible = all.filter(
+    (l) =>
+      ACTIVE_STATUSES.includes(l.status) ||
+      (l.pickup_date !== null &&
+        l.pickup_date >= today &&
+        l.pickup_date <= weekTo),
+  )
+
+  const customerIds = [
+    ...new Set([
+      ...boardLoads.map((l) => l.customer_id),
+      ...mapEligible.map((l) => l.customer_id),
+    ]),
+  ]
   const driverIds = [
     ...new Set(
-      boardLoads.map((l) => l.driver_id).filter((v): v is string => !!v),
+      [
+        ...boardLoads.map((l) => l.driver_id),
+        ...mapEligible.map((l) => l.driver_id),
+      ].filter((v): v is string => !!v),
     ),
   ]
   const [customersRes, driversRes] = await Promise.all([
@@ -319,6 +348,38 @@ async function DispatchView({
   const driverById = new Map(
     (driversRes.data ?? []).map((d) => [d.id, d.full_name] as const),
   )
+
+  // Geocode each map-eligible load. Loads where either origin or destination
+  // city isn't in the dictionary fall through silently — surfaced to the
+  // operator as the "N hidden" hint inside the map header.
+  const mapPoints: MapPoint[] = []
+  for (const l of mapEligible) {
+    const origin = geocodeCity(l.origin_city, l.origin_province)
+    const destination = geocodeCity(
+      l.destination_city,
+      l.destination_province,
+    )
+    if (!origin || !destination) continue
+    mapPoints.push({
+      id: l.id,
+      loadNumber: l.load_number,
+      status: l.status,
+      origin,
+      destination,
+      isCrossBorder: l.is_cross_border ?? false,
+      customerName: customerById.get(l.customer_id) ?? null,
+      driverName: l.driver_id ? driverById.get(l.driver_id) ?? null : null,
+      pickupDate: l.pickup_date,
+      totalBilledCad:
+        l.total_billed_cad === null ? null : Number(l.total_billed_cad),
+      originLabel: [l.origin_city, l.origin_province]
+        .filter(Boolean)
+        .join(", "),
+      destinationLabel: [l.destination_city, l.destination_province]
+        .filter(Boolean)
+        .join(", "),
+    })
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -392,90 +453,85 @@ async function DispatchView({
         </div>
       ) : null}
 
-      <section className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-              Live load board
-            </h2>
-            <p className="text-xs text-muted-foreground">
-              Active loads sorted by pickup date.
-            </p>
-          </div>
-          <Link
-            href="/loads"
-            className="text-xs font-medium text-brand-teal hover:underline"
-          >
-            View all →
-          </Link>
-        </div>
-        {boardLoads.length === 0 ? (
-          <div className="rounded-md border border-dashed border-border bg-muted/20 p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              No active loads. Create one to get the board moving.
-            </p>
+      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+        <OperationsMap points={mapPoints} />
+
+        <section className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+                Live load board
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                Active loads sorted by pickup date.
+              </p>
+            </div>
             <Link
-              href="/loads/new"
-              className={cn(
-                buttonVariants({ size: "sm" }),
-                "mt-3 inline-flex",
-              )}
+              href="/loads"
+              className="text-xs font-medium text-brand-teal hover:underline"
             >
-              <Plus />
-              New Load
+              View all →
             </Link>
           </div>
-        ) : (
-          <ul className="flex flex-col divide-y divide-border">
-            {boardLoads.map((l) => (
-              <li key={l.id}>
-                <Link
-                  href={`/loads/${l.id}`}
-                  className="flex flex-wrap items-center gap-3 py-2.5 hover:bg-muted/30"
-                >
-                  <span className="font-mono text-sm font-medium">
-                    {l.load_number}
-                  </span>
-                  <Badge
-                    className={cn(
-                      "border-transparent",
-                      STATUS_TONE[l.status],
-                    )}
+          {boardLoads.length === 0 ? (
+            <div className="rounded-md border border-dashed border-border bg-muted/20 p-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                No active loads. Create one to get the board moving.
+              </p>
+              <Link
+                href="/loads/new"
+                className={cn(
+                  buttonVariants({ size: "sm" }),
+                  "mt-3 inline-flex",
+                )}
+              >
+                <Plus />
+                New Load
+              </Link>
+            </div>
+          ) : (
+            <ul className="flex flex-col divide-y divide-border">
+              {boardLoads.map((l) => (
+                <li key={l.id}>
+                  <Link
+                    href={`/loads/${l.id}`}
+                    className="flex flex-wrap items-center gap-3 py-2.5 hover:bg-muted/30"
                   >
-                    {LOAD_STATUS_LABEL[l.status]}
-                  </Badge>
-                  <span className="text-sm text-muted-foreground">
-                    {customerById.get(l.customer_id) ?? "—"}
-                  </span>
-                  <span className="text-sm text-muted-foreground">
-                    {[l.origin_city, l.origin_province]
-                      .filter(Boolean)
-                      .join(", ") || "—"}{" "}
-                    →{" "}
-                    {[l.destination_city, l.destination_province]
-                      .filter(Boolean)
-                      .join(", ") || "—"}
-                  </span>
-                  <span className="ml-auto text-xs text-muted-foreground">
-                    {l.pickup_date
-                      ? format(parseISO(l.pickup_date), "MMM d")
-                      : "no pickup date"}
-                  </span>
-                  <span className="text-sm">
-                    {l.driver_id
-                      ? driverById.get(l.driver_id) ?? "driver"
-                      : (
-                          <span className="italic text-muted-foreground">
-                            unassigned
-                          </span>
-                        )}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+                    <span className="font-mono text-sm font-medium">
+                      {l.load_number}
+                    </span>
+                    <Badge
+                      className={cn(
+                        "border-transparent",
+                        STATUS_TONE[l.status],
+                      )}
+                    >
+                      {LOAD_STATUS_LABEL[l.status]}
+                    </Badge>
+                    <span className="text-sm text-muted-foreground">
+                      {customerById.get(l.customer_id) ?? "—"}
+                    </span>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {l.pickup_date
+                        ? format(parseISO(l.pickup_date), "MMM d")
+                        : "no pickup date"}
+                    </span>
+                    <span className="text-sm">
+                      {l.driver_id
+                        ? driverById.get(l.driver_id) ?? "driver"
+                        : (
+                            <span className="italic text-muted-foreground">
+                              unassigned
+                            </span>
+                          )}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <CustomersCard
