@@ -686,8 +686,12 @@ function DocsSection({ documents }: { documents: LoadDocPreview[] }) {
               key={d.id}
               doc={d}
               isHovered={hoveredId === d.id}
+              // Only set on enter — keep the preview pinned until the user
+              // hovers another thumb or the entire load popup closes (which
+              // unmounts this component and resets state). Setting on leave
+              // would close the preview the moment the user moves toward it
+              // to read or click.
               onMouseEnter={() => setHoveredId(d.id)}
-              onMouseLeave={() => setHoveredId(null)}
             />
           ))}
         </div>
