@@ -1,10 +1,17 @@
 "use client"
 
-import { useTransition } from "react"
+import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
+
+import {
+  LoadDocumentsSection,
+  type ExistingDocument,
+  type PendingDocument,
+} from "@/components/loads/load-documents-section"
+import { uploadLoadDocument } from "./[id]/documents/actions"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -24,10 +31,13 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
+import { cn } from "@/lib/utils"
 import {
   EQUIPMENT_REQUIRED_LABEL,
   EQUIPMENT_REQUIRED_VALUES,
   LOAD_CURRENCY_VALUES,
+  LOAD_STATUS_LABEL,
+  LOAD_STATUS_VALUES,
   LOAD_TYPE_LABEL,
   LOAD_TYPE_VALUES,
   loadSchema,
@@ -50,13 +60,25 @@ const COUNTRY_LABEL: Record<"CA" | "US" | "MX", string> = {
 export type LoadFormOptions = {
   customers: Array<{ id: string; name: string; active: boolean }>
   drivers: Array<{ id: string; full_name: string }>
-  trucks: Array<{ id: string; truck_number: string }>
+  trucks: Array<{
+    id: string
+    truck_number: string
+    maintenanceWarning?: {
+      severity: "overdue" | "due" | "warning"
+      label: string
+    } | null
+  }>
   trailers: Array<{ id: string; trailer_number: string }>
 }
 
 type Mode =
   | { kind: "create" }
-  | { kind: "edit"; loadId: string; initialValues: LoadInput }
+  | {
+      kind: "edit"
+      loadId: string
+      initialValues: LoadInput
+      documents?: ExistingDocument[]
+    }
 
 export function LoadForm({
   options,
@@ -67,6 +89,7 @@ export function LoadForm({
 }) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
+  const [pendingDocs, setPendingDocs] = useState<PendingDocument[]>([])
 
   const form = useForm<LoadInput>({
     resolver: zodResolver(loadSchema),
@@ -149,6 +172,30 @@ export function LoadForm({
         return
       }
 
+      // For new loads with attached files: upload each one against the just-
+      // created load. We surface per-file errors but don't block the redirect
+      // — partial uploads end up on the detail page where the user can retry.
+      if (mode.kind === "create" && pendingDocs.length > 0) {
+        let succeeded = 0
+        for (const d of pendingDocs) {
+          const fd = new FormData()
+          fd.set("load_id", result.id)
+          fd.set("type", d.type)
+          fd.set("file", d.file)
+          const r = await uploadLoadDocument(fd)
+          if ("error" in r) {
+            toast.error(`${d.file.name}: ${r.error}`)
+            continue
+          }
+          succeeded++
+        }
+        if (succeeded > 0) {
+          toast.success(
+            `Uploaded ${succeeded} document${succeeded === 1 ? "" : "s"}.`,
+          )
+        }
+      }
+
       toast.success(mode.kind === "edit" ? "Load updated." : "Load created.")
       router.push(`/loads/${result.id}`)
       router.refresh()
@@ -163,6 +210,50 @@ export function LoadForm({
         onSubmit={form.handleSubmit(onSubmit)}
         className="flex flex-col gap-8"
       >
+        {/* Status override — edit-only --------------------------------- */}
+        {mode.kind === "edit" ? (
+          <Section
+            title="Status (override)"
+            description="Use only to correct a mistake (e.g. someone clicked Mark paid by accident). Normal status changes happen on the load detail page; the timeline records every correction."
+          >
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Current status</FormLabel>
+                  <Select
+                    value={field.value ?? ""}
+                    onValueChange={field.onChange}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="w-full sm:w-[260px]">
+                        <SelectValue>
+                          {(v: string | null) =>
+                            v
+                              ? LOAD_STATUS_LABEL[
+                                  v as keyof typeof LOAD_STATUS_LABEL
+                                ] ?? v
+                              : ""
+                          }
+                        </SelectValue>
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {LOAD_STATUS_VALUES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          {LOAD_STATUS_LABEL[s]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </Section>
+        ) : null}
+
         {/* Customer & references --------------------------------------- */}
         <Section title="Customer & references">
           <FormField
@@ -550,39 +641,77 @@ export function LoadForm({
             <FormField
               control={form.control}
               name="truck_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Truck</FormLabel>
-                  <Select
-                    value={field.value ?? "_unassigned"}
-                    onValueChange={(v) =>
-                      field.onChange(v === "_unassigned" ? null : v)
-                    }
-                  >
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue>
-                          {(v: string | null) =>
-                            !v || v === "_unassigned"
-                              ? "Unassigned"
-                              : options.trucks.find((t) => t.id === v)
-                                  ?.truck_number ?? "—"
-                          }
-                        </SelectValue>
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="_unassigned">Unassigned</SelectItem>
-                      {options.trucks.map((t) => (
-                        <SelectItem key={t.id} value={t.id}>
-                          {t.truck_number}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
+              render={({ field }) => {
+                const selectedTruck = field.value
+                  ? options.trucks.find((t) => t.id === field.value)
+                  : null
+                const warning = selectedTruck?.maintenanceWarning ?? null
+                const warnTone =
+                  warning?.severity === "overdue"
+                    ? "border-red-300 bg-red-50 text-red-800"
+                    : warning?.severity === "due"
+                      ? "border-amber-300 bg-amber-50 text-amber-800"
+                      : "border-yellow-300 bg-yellow-50 text-yellow-800"
+                return (
+                  <FormItem>
+                    <FormLabel>Truck</FormLabel>
+                    <Select
+                      value={field.value ?? "_unassigned"}
+                      onValueChange={(v) =>
+                        field.onChange(v === "_unassigned" ? null : v)
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue>
+                            {(v: string | null) =>
+                              !v || v === "_unassigned"
+                                ? "Unassigned"
+                                : options.trucks.find((t) => t.id === v)
+                                    ?.truck_number ?? "—"
+                            }
+                          </SelectValue>
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="_unassigned">Unassigned</SelectItem>
+                        {options.trucks.map((t) => (
+                          <SelectItem key={t.id} value={t.id}>
+                            <span className="flex items-center gap-2">
+                              {t.truck_number}
+                              {t.maintenanceWarning ? (
+                                <span
+                                  className={cn(
+                                    "rounded-sm px-1 py-0.5 text-[9px] font-bold uppercase",
+                                    t.maintenanceWarning.severity === "overdue"
+                                      ? "bg-red-100 text-red-800"
+                                      : t.maintenanceWarning.severity === "due"
+                                        ? "bg-amber-100 text-amber-800"
+                                        : "bg-yellow-100 text-yellow-800",
+                                  )}
+                                >
+                                  {t.maintenanceWarning.severity}
+                                </span>
+                              ) : null}
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {warning ? (
+                      <p
+                        className={cn(
+                          "mt-1 rounded-md border px-2 py-1 text-[11px] font-medium",
+                          warnTone,
+                        )}
+                      >
+                        Maintenance {warning.severity}: {warning.label}
+                      </p>
+                    ) : null}
+                    <FormMessage />
+                  </FormItem>
+                )
+              }}
             />
             <FormField
               control={form.control}
@@ -935,6 +1064,22 @@ export function LoadForm({
                 <FormMessage />
               </FormItem>
             )}
+          />
+        </Section>
+
+        {/* Documents — optional upload. In edit mode the section uploads
+            immediately; in create mode files are queued and pushed after the
+            load is saved. */}
+        <Section
+          title="Documents"
+          description="Optional. Attach BOLs, PODs, customs paperwork, or rate confirmations."
+        >
+          <LoadDocumentsSection
+            loadId={mode.kind === "edit" ? mode.loadId : undefined}
+            initialDocuments={
+              mode.kind === "edit" ? mode.documents ?? [] : []
+            }
+            onPendingChange={mode.kind === "create" ? setPendingDocs : undefined}
           />
         </Section>
 

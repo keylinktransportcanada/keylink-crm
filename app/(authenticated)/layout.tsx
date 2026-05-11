@@ -1,6 +1,8 @@
 import { AppShell } from "@/components/shared/app-shell"
+import { InspectionMessageToast } from "@/components/shared/inspection-message-toast"
 import { requireRole } from "@/lib/auth"
 import { getNotificationsFor } from "@/lib/notifications"
+import { getLatestInspectionMessageFor } from "@/lib/inspection-messages"
 
 export default async function AuthenticatedLayout({
   children,
@@ -13,9 +15,13 @@ export default async function AuthenticatedLayout({
     "driver",
     "accounting",
   ])
-  const notifications = await getNotificationsFor(profile.id, profile.role)
+  const [notifications, latestInspectionMessage] = await Promise.all([
+    getNotificationsFor(profile.id, profile.role),
+    getLatestInspectionMessageFor(profile.id, profile.role),
+  ])
   return (
     <AppShell profile={profile} notifications={notifications}>
+      <InspectionMessageToast notice={latestInspectionMessage} />
       {children}
     </AppShell>
   )

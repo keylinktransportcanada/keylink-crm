@@ -65,10 +65,20 @@ export function OperationsChart({
   const valueFormatter = mode === "revenue" ? formatCAD : (n: number) => `${n}`
 
   return (
-    <section className="flex h-full flex-col gap-4 rounded-xl border border-border/70 bg-card p-5 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]">
+    <section
+      className={cn(
+        "relative isolate flex flex-col gap-3 overflow-hidden rounded-xl border border-border/70 bg-card p-4 text-foreground",
+        "shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]",
+      )}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-2">
-          <div className="inline-flex w-fit rounded-full bg-muted/60 p-1 text-xs font-medium">
+          <div
+            className={cn(
+              "inline-flex w-fit rounded-full p-1 text-xs font-medium",
+              "border border-border bg-muted/50",
+            )}
+          >
             <Tab active={mode === "revenue"} onClick={() => setMode("revenue")}>
               Revenue (CAD)
             </Tab>
@@ -77,14 +87,14 @@ export function OperationsChart({
             </Tab>
           </div>
           <div className="flex items-end gap-3">
-            <span className="font-display text-3xl tracking-tight text-brand-navy">
+            <span className="font-display text-3xl tracking-wide tabular-nums text-brand-navy">
               {mode === "revenue"
                 ? formatCAD2(currentTotal)
                 : currentTotal.toLocaleString()}
             </span>
             <DeltaBadge value={delta} trendUp={trendUp} />
           </div>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-slate">
             {title} · last 30 days
           </p>
         </div>
@@ -94,13 +104,15 @@ export function OperationsChart({
         />
       </div>
 
-      <Chart
-        series={series}
-        mode={mode}
-        hover={hover}
-        setHover={setHover}
-        valueFormatter={valueFormatter}
-      />
+      <div className="relative">
+        <Chart
+          series={series}
+          mode={mode}
+          hover={hover}
+          setHover={setHover}
+          valueFormatter={valueFormatter}
+        />
+      </div>
     </section>
   )
 }
@@ -143,8 +155,8 @@ function DeltaBadge({
       className={cn(
         "inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold",
         trendUp
-          ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300"
-          : "bg-red-500/15 text-red-700 dark:text-red-300",
+          ? "bg-emerald-100 text-emerald-700"
+          : "bg-red-100 text-red-700",
       )}
     >
       <Icon className="size-3" />
@@ -225,7 +237,7 @@ function Chart({
 
   if (series.length === 0) {
     return (
-      <div className="flex h-[170px] items-center justify-center rounded-md border border-dashed border-border bg-muted/20 text-sm text-muted-foreground">
+      <div className="flex h-[170px] items-center justify-center rounded-md border border-dashed border-border bg-muted/40 text-sm text-muted-foreground">
         No deliveries yet — chart will populate as loads complete.
       </div>
     )
@@ -241,9 +253,26 @@ function Chart({
       >
         <defs>
           <linearGradient id="opChartFill" x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="rgb(26 123 110)" stopOpacity="0.18" />
-            <stop offset="100%" stopColor="rgb(26 123 110)" stopOpacity="0" />
+            <stop offset="0%" stopColor="rgb(34 160 146)" stopOpacity="0.55" />
+            <stop offset="50%" stopColor="rgb(34 160 146)" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="rgb(34 160 146)" stopOpacity="0" />
           </linearGradient>
+          <linearGradient id="opChartSheen" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stopColor="white" stopOpacity="0.18" />
+            <stop offset="50%" stopColor="white" stopOpacity="0.03" />
+            <stop offset="100%" stopColor="white" stopOpacity="0" />
+          </linearGradient>
+          <linearGradient id="opChartStroke" x1="0" x2="1" y1="0" y2="0">
+            <stop offset="0%" stopColor="rgb(94 215 197)" />
+            <stop offset="100%" stopColor="rgb(34 160 146)" />
+          </linearGradient>
+          <filter id="opChartGlow" x="-10%" y="-30%" width="120%" height="160%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="2.4" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
         {gridLines.map((g, i) => (
@@ -253,21 +282,23 @@ function Chart({
             x2={W - PADDING.right}
             y1={g.y}
             y2={g.y}
-            stroke="currentColor"
+            stroke="rgb(15 23 42)"
+            strokeOpacity={0.08}
             strokeWidth={1}
             strokeDasharray="2 4"
-            className="text-border"
           />
         ))}
 
         <path d={areaD} fill="url(#opChartFill)" />
+        <path d={areaD} fill="url(#opChartSheen)" opacity={0.7} />
         <path
           d={pathD}
           fill="none"
-          stroke="rgb(26 123 110)"
-          strokeWidth={2}
+          stroke="url(#opChartStroke)"
+          strokeWidth={2.25}
           strokeLinecap="round"
           strokeLinejoin="round"
+          filter="url(#opChartGlow)"
         />
 
         {/* Hover hit-areas: invisible bars one per data point. */}
@@ -297,17 +328,24 @@ function Chart({
               x2={xFor(hover)}
               y1={PADDING.top}
               y2={PADDING.top + innerH}
-              stroke="rgb(26 123 110)"
+              stroke="rgb(94 215 197)"
               strokeWidth={1}
-              strokeOpacity={0.5}
+              strokeOpacity={0.45}
               strokeDasharray="3 3"
             />
             <circle
               cx={xFor(hover)}
               cy={yFor(mode === "revenue" ? series[hover].revenue : series[hover].count)}
+              r={11}
+              fill="rgb(94 215 197)"
+              fillOpacity={0.22}
+            />
+            <circle
+              cx={xFor(hover)}
+              cy={yFor(mode === "revenue" ? series[hover].revenue : series[hover].count)}
               r={5}
-              fill="white"
-              stroke="rgb(26 123 110)"
+              fill="rgb(94 215 197)"
+              stroke="rgb(15 23 42)"
               strokeWidth={2}
             />
           </>
@@ -320,7 +358,8 @@ function Chart({
             x={xFor(i)}
             y={H - 8}
             textAnchor="middle"
-            className="fill-muted-foreground text-[10px]"
+            fill="rgb(100 116 139)"
+            className="text-[10px]"
           >
             {format(parseISO(series[i].date), "MMM d")}
           </text>
@@ -358,7 +397,10 @@ function HoverTooltip({
   const left = `clamp(8px, calc(${xPercent}% - 60px), calc(100% - 128px))`
   return (
     <div
-      className="pointer-events-none absolute -top-1 flex w-[120px] flex-col gap-0.5 rounded-md border border-border bg-popover px-2.5 py-1.5 text-xs text-popover-foreground shadow-md"
+      className={cn(
+        "pointer-events-none absolute -top-1 flex w-[120px] flex-col gap-0.5 rounded-lg px-2.5 py-1.5 text-xs text-foreground",
+        "border border-border bg-popover shadow-md",
+      )}
       style={{ left }}
     >
       <span className="text-[10px] uppercase tracking-wider text-muted-foreground">

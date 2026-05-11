@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/auth"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 
 import { AddEmployeeButton } from "./add-employee-button"
@@ -14,7 +15,21 @@ export default async function EmployeesPage() {
     )
     .order("created_at", { ascending: false })
 
-  const employees: EmployeeRow[] = data ?? []
+  // Email lives on auth.users, not profiles. Pull it via the service-role
+  // admin API so we can show it (read-only) in the edit dialog.
+  const admin = createAdminClient()
+  const { data: authPage } = await admin.auth.admin.listUsers({
+    page: 1,
+    perPage: 1000,
+  })
+  const emailById = new Map(
+    (authPage?.users ?? []).map((u) => [u.id, u.email ?? null] as const),
+  )
+
+  const employees: EmployeeRow[] = (data ?? []).map((p) => ({
+    ...p,
+    email: emailById.get(p.id) ?? null,
+  }))
 
   return (
     <div className="flex flex-col gap-6">

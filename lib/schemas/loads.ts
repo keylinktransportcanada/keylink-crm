@@ -116,6 +116,12 @@ export const loadSchema = z.object({
 
   notes: optStr(2000),
   internal_notes: optStr(2000),
+
+  // Edit-only override. Create flow auto-derives status (draft / assigned).
+  // On update, admins/dispatchers can correct a mis-set status (e.g. someone
+  // hit "Mark paid" by accident); the server action records the change in
+  // load_status_events so the timeline still reflects it.
+  status: z.enum(LOAD_STATUS_VALUES).optional(),
 })
 
 export type LoadInput = z.infer<typeof loadSchema>

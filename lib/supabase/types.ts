@@ -115,6 +115,295 @@ export type Database = {
         }
         Relationships: []
       }
+      inspections: {
+        Row: {
+          id: string
+          truck_id: string
+          trailer_id: string | null
+          driver_id: string
+          load_id: string | null
+          inspection_type: Database["public"]["Enums"]["inspection_type"]
+          inspection_date: string
+          defects_found: boolean
+          defects_description: string | null
+          severity: Database["public"]["Enums"]["inspection_severity"]
+          signed_by_driver: boolean
+          corrected_at: string | null
+          corrected_by: string | null
+          corrected_notes: string | null
+          admin_reply: string | null
+          admin_reply_at: string | null
+          admin_reply_by: string | null
+          notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          truck_id: string
+          trailer_id?: string | null
+          driver_id: string
+          load_id?: string | null
+          inspection_type: Database["public"]["Enums"]["inspection_type"]
+          inspection_date?: string
+          defects_found?: boolean
+          defects_description?: string | null
+          severity?: Database["public"]["Enums"]["inspection_severity"]
+          signed_by_driver?: boolean
+          corrected_at?: string | null
+          corrected_by?: string | null
+          corrected_notes?: string | null
+          admin_reply?: string | null
+          admin_reply_at?: string | null
+          admin_reply_by?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          truck_id?: string
+          trailer_id?: string | null
+          driver_id?: string
+          load_id?: string | null
+          inspection_type?: Database["public"]["Enums"]["inspection_type"]
+          inspection_date?: string
+          defects_found?: boolean
+          defects_description?: string | null
+          severity?: Database["public"]["Enums"]["inspection_severity"]
+          signed_by_driver?: boolean
+          corrected_at?: string | null
+          corrected_by?: string | null
+          corrected_notes?: string | null
+          admin_reply?: string | null
+          admin_reply_at?: string | null
+          admin_reply_by?: string | null
+          notes?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspections_truck_id_fkey"
+            columns: ["truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_trailer_id_fkey"
+            columns: ["trailer_id"]
+            isOneToOne: false
+            referencedRelation: "trailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspections_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: false
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inspection_messages: {
+        Row: {
+          id: string
+          inspection_id: string
+          author_id: string
+          author_role: Database["public"]["Enums"]["app_role"]
+          message: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          inspection_id: string
+          author_id: string
+          author_role: Database["public"]["Enums"]["app_role"]
+          message: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          inspection_id?: string
+          author_id?: string
+          author_role?: Database["public"]["Enums"]["app_role"]
+          message?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inspection_messages_inspection_id_fkey"
+            columns: ["inspection_id"]
+            isOneToOne: false
+            referencedRelation: "inspections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inspection_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_profiles: {
+        Row: {
+          profile_id: string
+          licence_number: string | null
+          licence_class: string | null
+          licence_province: string | null
+          licence_expiry: string | null
+          medical_cert_expiry: string | null
+          fast_card_number: string | null
+          fast_card_expiry: string | null
+          abstract_last_pulled: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          hire_date: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          profile_id: string
+          licence_number?: string | null
+          licence_class?: string | null
+          licence_province?: string | null
+          licence_expiry?: string | null
+          medical_cert_expiry?: string | null
+          fast_card_number?: string | null
+          fast_card_expiry?: string | null
+          abstract_last_pulled?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          hire_date?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          profile_id?: string
+          licence_number?: string | null
+          licence_class?: string | null
+          licence_province?: string | null
+          licence_expiry?: string | null
+          medical_cert_expiry?: string | null
+          fast_card_number?: string | null
+          fast_card_expiry?: string | null
+          abstract_last_pulled?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          hire_date?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_profiles_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          id: string
+          load_id: string | null
+          truck_id: string | null
+          driver_id: string | null
+          trailer_id: string | null
+          inspection_id: string | null
+          inspection_message_id: string | null
+          type: Database["public"]["Enums"]["document_type"]
+          file_path: string
+          file_name: string
+          mime_type: string
+          size_bytes: number
+          expiry_date: string | null
+          uploaded_by: string | null
+          uploaded_at: string
+        }
+        Insert: {
+          id?: string
+          load_id?: string | null
+          truck_id?: string | null
+          driver_id?: string | null
+          trailer_id?: string | null
+          inspection_id?: string | null
+          inspection_message_id?: string | null
+          type: Database["public"]["Enums"]["document_type"]
+          file_path: string
+          file_name: string
+          mime_type: string
+          size_bytes: number
+          expiry_date?: string | null
+          uploaded_by?: string | null
+          uploaded_at?: string
+        }
+        Update: {
+          id?: string
+          load_id?: string | null
+          truck_id?: string | null
+          driver_id?: string | null
+          trailer_id?: string | null
+          inspection_id?: string | null
+          inspection_message_id?: string | null
+          type?: Database["public"]["Enums"]["document_type"]
+          file_path?: string
+          file_name?: string
+          mime_type?: string
+          size_bytes?: number
+          expiry_date?: string | null
+          uploaded_by?: string | null
+          uploaded_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: false
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_truck_id_fkey"
+            columns: ["truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_trailer_id_fkey"
+            columns: ["trailer_id"]
+            isOneToOne: false
+            referencedRelation: "trailers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       employee_id_counter: {
         Row: {
           id: number
@@ -129,6 +418,79 @@ export type Database = {
           next_value?: number
         }
         Relationships: []
+      }
+      maintenance_records: {
+        Row: {
+          id: string
+          truck_id: string
+          service_type: Database["public"]["Enums"]["maintenance_service_type"]
+          service_date: string
+          odometer_km: number | null
+          cost_cad: number | string | null
+          vendor: string | null
+          description: string | null
+          next_due_date: string | null
+          next_due_odometer_km: number | null
+          document_id: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          truck_id: string
+          service_type: Database["public"]["Enums"]["maintenance_service_type"]
+          service_date: string
+          odometer_km?: number | null
+          cost_cad?: number | string | null
+          vendor?: string | null
+          description?: string | null
+          next_due_date?: string | null
+          next_due_odometer_km?: number | null
+          document_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          truck_id?: string
+          service_type?: Database["public"]["Enums"]["maintenance_service_type"]
+          service_date?: string
+          odometer_km?: number | null
+          cost_cad?: number | string | null
+          vendor?: string | null
+          description?: string | null
+          next_due_date?: string | null
+          next_due_odometer_km?: number | null
+          document_id?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_records_truck_id_fkey"
+            columns: ["truck_id"]
+            isOneToOne: false
+            referencedRelation: "trucks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_records_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       load_number_counter: {
         Row: {
@@ -545,8 +907,34 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "dispatcher" | "driver" | "accounting"
+      document_type:
+        | "bol"
+        | "pod"
+        | "invoice"
+        | "rate_con"
+        | "customs"
+        | "cci"
+        | "inspection"
+        | "maintenance"
+        | "driver_licence"
+        | "medical"
+        | "fast_card"
+        | "insurance"
+        | "registration"
+        | "other"
       equipment_status: "active" | "maintenance" | "out_of_service" | "retired"
+      inspection_type: "pre_trip" | "post_trip" | "en_route"
+      inspection_severity: "none" | "minor" | "major"
       load_currency: "CAD" | "USD"
+      maintenance_service_type:
+        | "oil_change"
+        | "tire"
+        | "brake"
+        | "annual_inspection"
+        | "safety"
+        | "repair"
+        | "preventive"
+        | "other"
       load_status:
         | "draft"
         | "assigned"

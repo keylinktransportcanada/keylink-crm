@@ -141,10 +141,28 @@ export async function updateLoad(
 
   const row = await buildRow(parsed.data, me.id)
   // created_by is set on insert and shouldn't change on update.
-  const { created_by: _ignored, ...updateRow } = row
+  const { created_by: _ignored, ...updateRowBase } = row
   void _ignored
 
   const supabase = await createClient()
+
+  // Look up the existing status so we can detect a manual override and emit a
+  // timeline event when it changes.
+  const { data: prior } = await supabase
+    .from("loads")
+    .select("status")
+    .eq("id", parsed.data.id)
+    .maybeSingle()
+
+  const overrideStatus =
+    parsed.data.status && prior && parsed.data.status !== prior.status
+      ? parsed.data.status
+      : null
+
+  const updateRow = overrideStatus
+    ? { ...updateRowBase, status: overrideStatus }
+    : updateRowBase
+
   const { error } = await supabase
     .from("loads")
     .update(updateRow)
@@ -152,6 +170,15 @@ export async function updateLoad(
 
   if (error) {
     return { error: { _form: [error.message] } }
+  }
+
+  if (overrideStatus) {
+    await supabase.from("load_status_events").insert({
+      load_id: parsed.data.id,
+      status: overrideStatus,
+      location_note: "Status manually corrected via edit form",
+      created_by: me.id,
+    })
   }
 
   revalidatePath("/loads")

@@ -2,16 +2,34 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { AlertTriangle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { navItemsForRole } from "@/lib/nav"
 import type { Role } from "@/lib/auth"
 
-export function AppSidebar({ role }: { role: Role }) {
+// Map nav-href → number of attention-grabbing items the rail should surface
+// next to that link as a tiny caution chip.
+function buildBadgeMap(inspectionAlertCount: number): Map<string, number> {
+  const map = new Map<string, number>()
+  if (inspectionAlertCount > 0) {
+    map.set("/trucks", inspectionAlertCount)
+  }
+  return map
+}
+
+export function AppSidebar({
+  role,
+  inspectionAlertCount = 0,
+}: {
+  role: Role
+  inspectionAlertCount?: number
+}) {
   const pathname = usePathname()
   const items = navItemsForRole(role)
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`)
+  const badges = buildBadgeMap(inspectionAlertCount)
 
   return (
     <>
@@ -28,13 +46,14 @@ export function AppSidebar({ role }: { role: Role }) {
         {items.map((item) => {
           const active = isActive(item.href)
           const Icon = item.icon
+          const badge = badges.get(item.href) ?? 0
           return (
             <Link
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors",
+                "relative flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors",
                 active
                   ? "bg-brand-gold text-brand-navy [box-shadow:inset_0_1px_0_rgba(255,255,255,0.4),0_1px_2px_rgba(10,14,26,0.4)]"
                   : "text-brand-cloud/60 hover:bg-white/10 hover:text-brand-cloud",
@@ -42,6 +61,15 @@ export function AppSidebar({ role }: { role: Role }) {
             >
               <Icon className="size-4 shrink-0" />
               <span>{item.label}</span>
+              {badge > 0 ? (
+                <span
+                  aria-label={`${badge} alert${badge === 1 ? "" : "s"}`}
+                  className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-bold leading-none text-white"
+                >
+                  <AlertTriangle className="size-2.5" />
+                  {badge}
+                </span>
+              ) : null}
             </Link>
           )
         })}
@@ -75,27 +103,51 @@ export function AppSidebar({ role }: { role: Role }) {
           {items.map((item) => {
             const active = isActive(item.href)
             const Icon = item.icon
+            const badge = badges.get(item.href) ?? 0
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 aria-current={active ? "page" : undefined}
-                title={item.label}
+                title={
+                  badge > 0
+                    ? `${item.label} — ${badge} inspection alert${badge === 1 ? "" : "s"}`
+                    : item.label
+                }
                 className={cn(
-                  "mx-2 my-0.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors",
+                  "relative mx-2 my-0.5 flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium whitespace-nowrap transition-colors",
                   active
                     ? "bg-brand-gold text-brand-navy hover:bg-brand-gold-light [box-shadow:inset_0_1px_0_rgba(255,255,255,0.45),0_1px_2px_rgba(10,14,26,0.45)]"
                     : "text-brand-cloud/60 hover:bg-white/10 hover:text-brand-cloud",
                 )}
               >
-                <Icon className="size-5 shrink-0" />
+                <span className="relative">
+                  <Icon className="size-5 shrink-0" />
+                  {/* Pulsing red caution dot pinned to the icon — visible
+                      whether the rail is collapsed (icon-only) or expanded. */}
+                  {badge > 0 ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute -right-1 -top-1 inline-flex size-2 animate-pulse rounded-full bg-red-500 ring-2 ring-brand-midnight"
+                    />
+                  ) : null}
+                </span>
                 <span
                   className={cn(
-                    "opacity-0 transition-opacity duration-150",
+                    "flex flex-1 items-center justify-between gap-2 opacity-0 transition-opacity duration-150",
                     "group-hover:opacity-100 group-hover:delay-100",
                   )}
                 >
-                  {item.label}
+                  <span>{item.label}</span>
+                  {badge > 0 ? (
+                    <span
+                      aria-label={`${badge} inspection alert${badge === 1 ? "" : "s"}`}
+                      className="inline-flex items-center gap-0.5 rounded-full bg-red-500 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white"
+                    >
+                      <AlertTriangle className="size-2.5" />
+                      {badge}
+                    </span>
+                  ) : null}
                 </span>
               </Link>
             )

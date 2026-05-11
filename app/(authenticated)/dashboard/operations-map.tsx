@@ -45,18 +45,20 @@ const ACTIVE_STATUSES = new Set<LoadStatus>([
   "at_delivery",
 ])
 
-const STATUS_TONE_GLASS: Record<LoadStatus, string> = {
-  draft: "bg-white/10 text-brand-cloud/70",
-  assigned: "bg-blue-400/20 text-blue-100",
-  dispatched: "bg-blue-400/20 text-blue-100",
-  at_pickup: "bg-amber-400/25 text-amber-100",
-  loaded: "bg-amber-400/25 text-amber-100",
-  in_transit: "bg-indigo-400/25 text-indigo-100",
-  at_delivery: "bg-amber-400/25 text-amber-100",
-  delivered: "bg-emerald-400/25 text-emerald-100",
-  invoiced: "bg-emerald-400/25 text-emerald-100",
-  paid: "bg-emerald-500/30 text-emerald-50",
-  cancelled: "bg-red-400/25 text-red-100",
+// Light-context tones for the hover-card popover. Pairs with the white card
+// surface — pastel backgrounds + dark accent text.
+const STATUS_TONE: Record<LoadStatus, string> = {
+  draft: "bg-muted text-muted-foreground",
+  assigned: "bg-blue-100 text-blue-700",
+  dispatched: "bg-blue-100 text-blue-700",
+  at_pickup: "bg-amber-100 text-amber-700",
+  loaded: "bg-amber-100 text-amber-700",
+  in_transit: "bg-indigo-100 text-indigo-700",
+  at_delivery: "bg-amber-100 text-amber-700",
+  delivered: "bg-emerald-100 text-emerald-700",
+  invoiced: "bg-emerald-100 text-emerald-700",
+  paid: "bg-emerald-200 text-emerald-800",
+  cancelled: "bg-red-100 text-red-700",
 }
 
 const W = 800
@@ -178,23 +180,17 @@ export function OperationsMap({ points }: { points: MapPoint[] }) {
   return (
     <section
       className={cn(
-        "relative isolate flex h-full flex-col gap-4 overflow-hidden rounded-xl p-5 text-brand-cloud",
-        "border border-white/10 bg-brand-midnight/80 backdrop-blur-2xl backdrop-saturate-150",
-        "[box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_24px_48px_-16px_rgba(10,14,26,0.45),0_4px_16px_-4px_rgba(10,14,26,0.25)]",
+        "relative isolate flex h-full flex-col gap-3 overflow-hidden rounded-xl border border-border/70 bg-card p-4 text-foreground",
+        "shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]",
       )}
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-32 bg-[radial-gradient(ellipse_at_50%_0%,rgba(34,160,146,0.22)_0%,transparent_70%)]"
-      />
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-2">
           <div
             className={cn(
               "inline-flex w-fit rounded-full p-1 text-xs font-medium",
-              "border border-white/10 bg-white/[0.06] backdrop-blur-md",
-              "[box-shadow:inset_0_1px_0_rgba(255,255,255,0.08)]",
+              "border border-border bg-muted/50",
             )}
           >
             <Tab
@@ -214,23 +210,23 @@ export function OperationsMap({ points }: { points: MapPoint[] }) {
             </Tab>
           </div>
           <div className="flex items-end gap-3">
-            <span className="font-display text-3xl tracking-wide tabular-nums text-brand-cloud">
+            <span className="font-display text-3xl tracking-wide tabular-nums text-brand-navy">
               {projected.length.toLocaleString()}
             </span>
-            <span className="pb-1 text-xs text-brand-cloud/65">
+            <span className="pb-1 text-xs text-muted-foreground">
               {projected.length === 1 ? "load" : "loads"} on the map
               {skipped > 0
                 ? ` · ${skipped} hidden (city not mapped)`
                 : ""}
             </span>
           </div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-cloud/65">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-slate">
             North America · live operations
           </p>
         </div>
         <MapIcon
           aria-hidden="true"
-          className="size-5 shrink-0 text-brand-cloud/40"
+          className="size-5 shrink-0 text-muted-foreground/40"
         />
       </div>
 
@@ -266,10 +262,10 @@ export function OperationsMap({ points }: { points: MapPoint[] }) {
                 d={c.d}
                 fill={
                   isPrimary
-                    ? "rgba(255,255,255,0.06)"
-                    : "rgba(255,255,255,0.025)"
+                    ? "rgba(15,23,42,0.05)"
+                    : "rgba(15,23,42,0.025)"
                 }
-                stroke="rgba(255,255,255,0.16)"
+                stroke="rgba(15,23,42,0.18)"
                 strokeWidth={0.6}
               />
             )
@@ -294,7 +290,7 @@ export function OperationsMap({ points }: { points: MapPoint[] }) {
 
         {projected.length === 0 ? (
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <p className="rounded-md border border-dashed border-white/15 bg-brand-midnight/60 px-4 py-2 text-sm text-brand-cloud/65">
+            <p className="rounded-md border border-dashed border-border bg-card px-4 py-2 text-sm text-muted-foreground">
               {filter === "active"
                 ? "No active loads on the map."
                 : filter === "today"
@@ -328,8 +324,8 @@ function Tab({
       className={cn(
         "rounded-full px-3 py-1.5 transition-colors",
         active
-          ? "bg-white/15 text-brand-cloud [box-shadow:inset_0_1px_0_rgba(255,255,255,0.18),0_1px_2px_rgba(10,14,26,0.4)]"
-          : "text-brand-cloud/55 hover:text-brand-cloud",
+          ? "bg-card text-foreground shadow-[0_1px_2px_rgba(18,41,74,0.06)]"
+          : "text-muted-foreground hover:text-foreground",
       )}
     >
       {children}
@@ -461,9 +457,8 @@ function HoverCard({ p }: { p: ProjectedPoint }) {
   return (
     <div
       className={cn(
-        "pointer-events-none absolute z-10 flex w-[260px] flex-col gap-2 rounded-xl px-3.5 py-3 text-xs text-brand-cloud",
-        "border border-white/10 bg-brand-midnight/90 backdrop-blur-2xl backdrop-saturate-150",
-        "[box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_16px_32px_-12px_rgba(10,14,26,0.55)]",
+        "pointer-events-none absolute z-10 flex w-[260px] flex-col gap-2 rounded-xl px-3.5 py-3 text-xs text-foreground",
+        "border border-border bg-popover shadow-md",
       )}
       style={{
         left: flipLeft ? undefined : `calc(${xPct}% + 14px)`,
@@ -473,39 +468,39 @@ function HoverCard({ p }: { p: ProjectedPoint }) {
       }}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-sm font-semibold tracking-tight text-brand-cloud">
+        <span className="font-mono text-sm font-semibold tracking-tight">
           {p.loadNumber}
         </span>
         <Badge
-          className={cn("border-transparent", STATUS_TONE_GLASS[p.status])}
+          className={cn("border-transparent", STATUS_TONE[p.status])}
         >
           {LOAD_STATUS_LABEL[p.status]}
         </Badge>
       </div>
       <div className="flex flex-col gap-0.5">
-        <span className="text-[10px] uppercase tracking-wider text-brand-cloud/55">
+        <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
           Customer
         </span>
         <span className="font-medium">{p.customerName ?? "—"}</span>
       </div>
       <div className="flex flex-col gap-0.5 text-[11px]">
-        <span className="text-brand-cloud/65">{p.originLabel}</span>
-        <span className="text-brand-cloud/45">↓</span>
-        <span className="text-brand-cloud/65">{p.destinationLabel}</span>
+        <span className="text-muted-foreground">{p.originLabel}</span>
+        <span className="text-muted-foreground/60">↓</span>
+        <span className="text-muted-foreground">{p.destinationLabel}</span>
       </div>
-      <div className="flex items-center justify-between gap-2 border-t border-white/10 pt-2 text-[11px]">
+      <div className="flex items-center justify-between gap-2 border-t border-border pt-2 text-[11px]">
         <div className="flex flex-col gap-0.5">
-          <span className="text-[10px] uppercase tracking-wider text-brand-cloud/55">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Driver
           </span>
           <span>
             {p.driverName ?? (
-              <span className="italic text-brand-cloud/55">unassigned</span>
+              <span className="italic text-muted-foreground">unassigned</span>
             )}
           </span>
         </div>
         <div className="flex flex-col items-end gap-0.5">
-          <span className="text-[10px] uppercase tracking-wider text-brand-cloud/55">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             {p.pickupDate ? "Pickup" : ""}
           </span>
           <span className="tabular-nums">
@@ -515,7 +510,7 @@ function HoverCard({ p }: { p: ProjectedPoint }) {
           </span>
         </div>
         <div className="flex flex-col items-end gap-0.5">
-          <span className="text-[10px] uppercase tracking-wider text-brand-cloud/55">
+          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
             Rate
           </span>
           <span className="font-medium tabular-nums">
@@ -524,7 +519,7 @@ function HoverCard({ p }: { p: ProjectedPoint }) {
         </div>
       </div>
       {p.isCrossBorder ? (
-        <span className="inline-flex w-fit items-center rounded bg-brand-teal/30 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-teal-light">
+        <span className="inline-flex w-fit items-center rounded bg-brand-teal/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-brand-teal">
           Cross-border
         </span>
       ) : null}
@@ -534,7 +529,7 @@ function HoverCard({ p }: { p: ProjectedPoint }) {
 
 function Legend() {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] uppercase tracking-wider text-brand-cloud/55">
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] uppercase tracking-wider text-muted-foreground">
       <span className="inline-flex items-center gap-1.5">
         <span className="size-2 rounded-full bg-[rgb(224_180_83)]" />
         Pickup
@@ -548,7 +543,7 @@ function Legend() {
         Active lane
       </span>
       <span className="inline-flex items-center gap-1.5">
-        <span className="h-px w-6 border-t border-dashed border-brand-cloud/45" />
+        <span className="h-px w-6 border-t border-dashed border-muted-foreground/45" />
         Cross-border
       </span>
     </div>

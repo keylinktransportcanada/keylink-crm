@@ -1,7 +1,10 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { format, parseISO } from "date-fns"
-import { ChevronLeft, MapPin, Pencil } from "lucide-react"
+import { ChevronLeft, FileDown, MapPin, Pencil } from "lucide-react"
+
+import { LoadDocumentsViewer } from "@/components/loads/load-documents-viewer"
+import type { DocumentType } from "@/lib/schemas/documents"
 
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -126,6 +129,29 @@ export default async function LoadDetailPage({
       .order("created_at", { ascending: false }),
   ])
 
+  const { data: documentRows } = await supabase
+    .from("documents")
+    .select("id, type, file_path, file_name, mime_type, size_bytes, uploaded_at")
+    .eq("load_id", id)
+    .order("uploaded_at", { ascending: false })
+
+  const documents = await Promise.all(
+    (documentRows ?? []).map(async (d) => {
+      const { data: signed } = await supabase.storage
+        .from("load-documents")
+        .createSignedUrl(d.file_path, 600)
+      return {
+        id: d.id,
+        type: d.type as DocumentType,
+        file_name: d.file_name,
+        mime_type: d.mime_type,
+        size_bytes: Number(d.size_bytes),
+        uploaded_at: d.uploaded_at,
+        signed_url: signed?.signedUrl ?? null,
+      }
+    }),
+  )
+
   const eventActorIds = [
     ...new Set(
       (events ?? [])
@@ -146,6 +172,11 @@ export default async function LoadDetailPage({
   const canEdit = me.role === "admin" || me.role === "dispatcher"
   const canDelete = me.role === "admin" || me.role === "dispatcher"
   const role = me.role
+  const canInvoice =
+    (role === "admin" || role === "dispatcher" || role === "accounting") &&
+    (load.status === "delivered" ||
+      load.status === "invoiced" ||
+      load.status === "paid")
 
   const fxRate = Number(load.fx_rate_to_cad ?? 1)
   const enteredRate =
@@ -196,6 +227,17 @@ export default async function LoadDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {canInvoice ? (
+            <a
+              href={`/loads/${load.id}/invoice`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={buttonVariants({ size: "sm", variant: "outline" })}
+            >
+              <FileDown />
+              Invoice PDF (draft)
+            </a>
+          ) : null}
           {canEdit ? (
             <Link
               href={`/loads/${load.id}/edit`}
@@ -320,6 +362,11 @@ export default async function LoadDetailPage({
               </Grid>
             </Card>
           ) : null}
+
+          {/* Documents */}
+          <Card title="Documents">
+            <LoadDocumentsViewer documents={documents} />
+          </Card>
 
           {/* References + notes */}
           <Card title="References & notes">

@@ -1,0 +1,145 @@
+// Recent load activity feed for the dashboard. Renders the latest status
+// transitions across the company so dispatch can glance at what's moving.
+import Link from "next/link"
+import {
+  CheckCircle2,
+  Clock,
+  Package,
+  PackageCheck,
+  PackageOpen,
+  Truck,
+  XCircle,
+  type LucideIcon,
+} from "lucide-react"
+
+import { cn } from "@/lib/utils"
+import { LOAD_STATUS_LABEL } from "@/lib/schemas/loads"
+import type { LoadStatus } from "@/lib/supabase/types"
+
+export type ActivityItem = {
+  id: string
+  loadId: string
+  loadNumber: string
+  status: LoadStatus
+  customerName: string | null
+  createdAt: string
+}
+
+const STATUS_ICON: Record<LoadStatus, LucideIcon> = {
+  draft: Package,
+  assigned: Truck,
+  dispatched: Truck,
+  at_pickup: PackageOpen,
+  loaded: Package,
+  in_transit: Truck,
+  at_delivery: PackageOpen,
+  delivered: PackageCheck,
+  invoiced: CheckCircle2,
+  paid: CheckCircle2,
+  cancelled: XCircle,
+}
+
+const STATUS_TONE: Record<LoadStatus, string> = {
+  draft: "bg-muted text-muted-foreground",
+  assigned: "bg-blue-100 text-blue-700",
+  dispatched: "bg-blue-100 text-blue-700",
+  at_pickup: "bg-amber-100 text-amber-700",
+  loaded: "bg-amber-100 text-amber-700",
+  in_transit: "bg-indigo-100 text-indigo-700",
+  at_delivery: "bg-amber-100 text-amber-700",
+  delivered: "bg-emerald-100 text-emerald-700",
+  invoiced: "bg-emerald-100 text-emerald-700",
+  paid: "bg-emerald-200 text-emerald-800",
+  cancelled: "bg-red-100 text-red-700",
+}
+
+function timeAgo(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime()
+  const minutes = Math.round(ms / 60_000)
+  if (minutes < 1) return "just now"
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.round(hours / 24)
+  if (days === 1) return "yesterday"
+  return `${days}d ago`
+}
+
+export function RecentActivity({ items }: { items: ActivityItem[] }) {
+  return (
+    <section className="flex flex-col gap-2 rounded-xl border border-border/70 bg-card p-3 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span
+            className="size-1.5 rounded-full bg-brand-gold"
+            aria-hidden="true"
+          />
+          <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-slate">
+            Recent activity
+          </h2>
+        </div>
+        <Link
+          href="/loads"
+          className="text-xs font-medium text-brand-teal hover:underline"
+        >
+          View all →
+        </Link>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="rounded-md border border-dashed border-border bg-muted/20 p-6 text-center">
+          <Clock
+            className="mx-auto size-6 text-muted-foreground/50"
+            aria-hidden="true"
+          />
+          <p className="mt-2 text-sm text-muted-foreground">
+            No status changes yet. Activity will appear here as loads progress.
+          </p>
+        </div>
+      ) : (
+        <ul className="flex flex-col gap-1">
+          {items.map((item) => {
+            const Icon = STATUS_ICON[item.status]
+            return (
+              <li key={item.id}>
+                <Link
+                  href={`/loads/${item.loadId}`}
+                  className={cn(
+                    "flex items-start gap-3 rounded-md p-2 transition-colors",
+                    "hover:bg-muted/40",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-md",
+                      STATUS_TONE[item.status],
+                    )}
+                    aria-hidden="true"
+                  >
+                    <Icon className="size-4" />
+                  </span>
+                  <div className="flex flex-1 flex-col gap-0.5 leading-tight">
+                    <p className="text-sm">
+                      <span className="font-mono font-medium">
+                        {item.loadNumber}
+                      </span>{" "}
+                      <span className="text-muted-foreground">
+                        {LOAD_STATUS_LABEL[item.status].toLowerCase()}
+                      </span>
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {item.customerName ?? "—"}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {timeAgo(item.createdAt)}
+                  </span>
+                </Link>
+              </li>
+            )
+          })}
+        </ul>
+      )}
+    </section>
+  )
+}

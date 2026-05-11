@@ -8,8 +8,12 @@ import {
   Bell,
   CalendarClock,
   CheckCircle2,
+  MessageSquare,
+  Search,
   Truck,
 } from "lucide-react"
+
+import { CommandPalette } from "./command-palette"
 
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -63,9 +67,23 @@ export function AppTopbar({
   const [pending, startTransition] = useTransition()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [popoverOpen, setPopoverOpen] = useState(false)
+  const [chatOpen, setChatOpen] = useState(false)
+  const [paletteOpen, setPaletteOpen] = useState(false)
   // null until hydrated — keeps the SSR markup deterministic (no badge) and
   // avoids a hydration mismatch on the count.
   const [seenIds, setSeenIds] = useState<Set<string> | null>(null)
+
+  // Global Cmd+K / Ctrl+K toggles the command palette.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
+        e.preventDefault()
+        setPaletteOpen((v) => !v)
+      }
+    }
+    window.addEventListener("keydown", handler)
+    return () => window.removeEventListener("keydown", handler)
+  }, [])
 
   useEffect(() => {
     try {
@@ -90,39 +108,98 @@ export function AppTopbar({
     }
   }, [popoverOpen, notifications])
 
-  const { expiries, statusEvents, urgentCount, totalCount, unseenCount, unseenUrgent } = useMemo(() => {
+  // Mark inspection-message ids as seen when the chat popover opens. Shares
+  // the same seen-set as the bell so opening either one clears the message
+  // count on both.
+  useEffect(() => {
+    if (!chatOpen || !seenIds) return
+    const next = new Set(seenIds)
+    let added = false
+    for (const n of notifications) {
+      if (n.id.startsWith("inspection-message:") && !next.has(n.id)) {
+        next.add(n.id)
+        added = true
+      }
+    }
+    if (!added) return
+    setSeenIds(next)
+    try {
+      window.localStorage.setItem(
+        SEEN_STORAGE_KEY,
+        JSON.stringify(Array.from(next)),
+      )
+    } catch {
+      // ignore
+    }
+  }, [chatOpen, notifications, seenIds])
+
+  const {
+    inspections,
+    inspectionMessages,
+    expiries,
+    statusEvents,
+    urgentCount,
+    totalCount,
+    unseenCount,
+    unseenUrgent,
+    unseenChatCount,
+  } = useMemo(() => {
+    const ins = notifications
+      .filter(
+        (n) =>
+          n.kind === "inspection" && !n.id.startsWith("inspection-message:"),
+      )
+      .sort((a, b) => b.rank - a.rank)
+    const messages = notifications
+      .filter(
+        (n) => n.kind === "inspection" && n.id.startsWith("inspection-message:"),
+      )
+      .sort((a, b) => b.rank - a.rank)
     const ex = notifications
       .filter((n) => n.kind === "expiry")
       .sort((a, b) => b.rank - a.rank)
     const ev = notifications
       .filter((n) => n.kind === "status")
       .sort((a, b) => b.rank - a.rank)
-    const urgent = ex.filter(
-      (n) => n.severity === "expired" || n.severity === "critical",
-    ).length
+    const urgent =
+      ins.length +
+      ex.filter(
+        (n) => n.severity === "expired" || n.severity === "critical",
+      ).length
 
     let unseen = 0
     let unseenUrg = 0
+    let unseenChat = 0
     if (seenIds) {
       for (const n of notifications) {
         if (seenIds.has(n.id)) continue
         unseen++
         if (
-          n.kind === "expiry" &&
-          (n.severity === "expired" || n.severity === "critical")
+          n.kind === "inspection" ||
+          (n.kind === "expiry" &&
+            (n.severity === "expired" || n.severity === "critical"))
         ) {
           unseenUrg++
+        }
+        if (
+          n.kind === "inspection" &&
+          n.id.startsWith("inspection-message:")
+        ) {
+          unseenChat++
         }
       }
     }
 
     return {
+      inspections: ins,
+      inspectionMessages: messages,
       expiries: ex,
       statusEvents: ev,
       urgentCount: urgent,
       totalCount: notifications.length,
       unseenCount: unseen,
       unseenUrgent: unseenUrg,
+      unseenChatCount: unseenChat,
     }
   }, [notifications, seenIds])
 
@@ -149,6 +226,30 @@ export function AppTopbar({
       </div>
 
       <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          aria-label="Open search"
+          className={cn(
+            "group hidden h-8 items-center gap-2 rounded-md border border-white/15 bg-white/[0.04] px-2.5 text-xs text-brand-cloud/70 transition-colors hover:bg-white/10 hover:text-brand-cloud sm:inline-flex",
+          )}
+        >
+          <Search className="size-3.5 shrink-0" />
+          <span className="hidden md:inline">Search…</span>
+          <kbd className="ml-1 hidden rounded border border-white/15 bg-white/[0.06] px-1 py-0.5 text-[9px] font-medium text-brand-cloud/60 md:inline">
+            ⌘K
+          </kbd>
+        </button>
+        <button
+          type="button"
+          onClick={() => setPaletteOpen(true)}
+          aria-label="Open search"
+          className={cn(
+            "inline-flex size-8 items-center justify-center rounded-md border border-white/15 bg-transparent text-brand-cloud transition-colors hover:bg-white/5 sm:hidden",
+          )}
+        >
+          <Search className="size-4" />
+        </button>
         <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
           <PopoverTrigger
             render={
@@ -222,6 +323,21 @@ export function AppTopbar({
                 </div>
               ) : (
                 <>
+                  {inspections.length > 0 ? (
+                    <SectionHeader
+                      icon={<AlertTriangle className="size-3.5" />}
+                      label="Out-of-service trucks"
+                      count={inspections.length}
+                    />
+                  ) : null}
+                  {inspections.map((n) => (
+                    <NotificationRow
+                      key={n.id}
+                      notification={n}
+                      onNavigate={() => setPopoverOpen(false)}
+                    />
+                  ))}
+
                   {expiries.length > 0 ? (
                     <SectionHeader
                       icon={<CalendarClock className="size-3.5" />}
@@ -249,6 +365,80 @@ export function AppTopbar({
                       key={n.id}
                       notification={n}
                       onNavigate={() => setPopoverOpen(false)}
+                    />
+                  ))}
+                </>
+              )}
+            </div>
+          </PopoverContent>
+        </Popover>
+
+        <Popover open={chatOpen} onOpenChange={setChatOpen}>
+          <PopoverTrigger
+            render={
+              <Button
+                variant="outline"
+                size="icon-sm"
+                aria-label={
+                  unseenChatCount > 0
+                    ? `Inspection messages: ${unseenChatCount} unread`
+                    : "Inspection messages"
+                }
+                className="relative border-white/15 bg-transparent text-brand-cloud hover:bg-white/5 hover:text-brand-cloud"
+              />
+            }
+          >
+            <MessageSquare className="size-4" />
+            {unseenChatCount > 0 ? (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold leading-none text-white ring-2 ring-brand-midnight",
+                )}
+              >
+                {unseenChatCount > 99 ? "99+" : unseenChatCount}
+              </span>
+            ) : null}
+          </PopoverTrigger>
+          <PopoverContent
+            align="end"
+            sideOffset={8}
+            className={cn(
+              "w-[360px] overflow-hidden p-0 text-brand-cloud",
+              "border border-white/10 bg-brand-midnight/85 backdrop-blur-2xl backdrop-saturate-150",
+              "[box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_24px_48px_-16px_rgba(10,14,26,0.45),0_4px_16px_-4px_rgba(10,14,26,0.25)]",
+            )}
+          >
+            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-semibold">Inspection messages</h3>
+                {inspectionMessages.length > 0 ? (
+                  <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold tabular-nums">
+                    {inspectionMessages.length}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            <div className="max-h-[480px] overflow-y-auto">
+              {inspectionMessages.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 px-6 py-10 text-center">
+                  <MessageSquare
+                    className="size-7 text-brand-cloud/40"
+                    aria-hidden="true"
+                  />
+                  <p className="text-sm font-medium">No new replies</p>
+                  <p className="max-w-[240px] text-xs text-brand-cloud/55">
+                    When someone replies on an inspection thread, it shows up
+                    here.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {inspectionMessages.map((n) => (
+                    <NotificationRow
+                      key={n.id}
+                      notification={n}
+                      onNavigate={() => setChatOpen(false)}
                     />
                   ))}
                 </>
@@ -304,6 +494,7 @@ export function AppTopbar({
         currentName={profile.full_name}
         currentUrl={profile.avatar_url}
       />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </header>
   )
 }

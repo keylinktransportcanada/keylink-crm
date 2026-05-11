@@ -1,4 +1,5 @@
 import {
+  BadgeCheck,
   Building2,
   Container,
   LayoutDashboard,
@@ -37,22 +38,28 @@ export const NAV_ITEMS: NavItem[] = [
     roles: ["admin", "dispatcher", "accounting"],
   },
   {
-    label: "Trailers",
-    href: "/trailers",
-    icon: Container,
-    roles: ["admin", "dispatcher", "accounting"],
-  },
-  {
     label: "Loads",
     href: "/loads",
     icon: Package,
     roles: ["admin", "dispatcher", "driver", "accounting"],
   },
   {
+    label: "Drivers",
+    href: "/drivers",
+    icon: BadgeCheck,
+    roles: ["admin", "dispatcher"],
+  },
+  {
     label: "Employees",
     href: "/admin/employees",
     icon: Users,
     roles: ["admin"],
+  },
+  {
+    label: "Trailers",
+    href: "/trailers",
+    icon: Container,
+    roles: ["admin", "dispatcher", "accounting"],
   },
 ]
 

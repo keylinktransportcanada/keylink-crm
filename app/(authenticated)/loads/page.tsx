@@ -5,7 +5,7 @@ import { buttonVariants } from "@/components/ui/button"
 import { requireRole } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/server"
 
-import { LoadsTable, type LoadListRow } from "./loads-table"
+import { LoadsTable, type LoadListRow, type LoadDocPreview } from "./loads-table"
 
 export default async function LoadsPage() {
   const me = await requireRole(["admin", "dispatcher", "accounting", "driver"])
@@ -70,6 +70,50 @@ export default async function LoadsPage() {
       : Promise.resolve({ data: [], error: null }),
   ])
 
+  // Pull a small preview slice of attached documents per load. Up to 4 most-
+  // recent so the hover card can show a thumbnail strip without bloating the
+  // initial query. Signed URLs live for 10 minutes so the table stays clickable
+  // for a while; reload re-signs them.
+  const loadIds = loadsRaw.map((l) => l.id)
+  const { data: docRows } = loadIds.length
+    ? await supabase
+        .from("documents")
+        .select(
+          "id, load_id, type, file_path, file_name, mime_type, size_bytes, uploaded_at",
+        )
+        .in("load_id", loadIds)
+        .order("uploaded_at", { ascending: false })
+    : { data: [] as Array<{
+        id: string
+        load_id: string
+        type: string
+        file_path: string
+        file_name: string
+        mime_type: string
+        size_bytes: number
+        uploaded_at: string
+      }> }
+
+  const docsByLoad = new Map<string, LoadDocPreview[]>()
+  for (const d of docRows ?? []) {
+    if (!d.load_id) continue  // schema allows null but list view only cares about load-attached docs
+    const list = docsByLoad.get(d.load_id) ?? []
+    if (list.length >= 4) continue  // cap per load for the hover strip
+    const { data: signed } = await supabase.storage
+      .from("load-documents")
+      .createSignedUrl(d.file_path, 600)
+    list.push({
+      id: d.id,
+      type: d.type,
+      file_name: d.file_name,
+      mime_type: d.mime_type,
+      size_bytes: Number(d.size_bytes),
+      uploaded_at: d.uploaded_at,
+      signed_url: signed?.signedUrl ?? null,
+    })
+    docsByLoad.set(d.load_id, list)
+  }
+
   const customerById = new Map(
     (customersRes.data ?? []).map((c) => [c.id, c.name] as const),
   )
@@ -109,6 +153,7 @@ export default async function LoadsPage() {
     notes: l.notes,
     reference_number: l.reference_number,
     po_number: l.po_number,
+    documents: docsByLoad.get(l.id) ?? [],
   }))
 
   return (

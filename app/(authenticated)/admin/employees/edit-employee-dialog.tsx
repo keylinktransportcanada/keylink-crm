@@ -185,6 +185,23 @@ function EditView({
           onSubmit={form.handleSubmit(onSubmit)}
           className="flex flex-col gap-4"
         >
+          {/* Read-only email — fixed at creation. Shown so admins can spot the
+              login address without leaving this dialog. */}
+          <div className="flex flex-col gap-1.5">
+            <Label>
+              Email{" "}
+              <span className="text-xs font-normal text-muted-foreground">
+                (sign-in address — can&apos;t be changed)
+              </span>
+            </Label>
+            <Input
+              type="email"
+              value={employee.email ?? ""}
+              readOnly
+              tabIndex={-1}
+              className="bg-muted/40"
+            />
+          </div>
           <FormField
             control={form.control}
             name="full_name"

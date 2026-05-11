@@ -5,8 +5,10 @@ import { ChevronLeft } from "lucide-react"
 import { requireRole } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/server"
 import type { LoadInput } from "@/lib/schemas/loads"
+import { trucksWithMaintenanceWarnings } from "@/lib/maintenance/load-form-trucks"
 
 import { LoadForm, type LoadFormOptions } from "../../load-form"
+import type { ExistingDocument } from "@/components/loads/load-documents-section"
 
 export default async function EditLoadPage({
   params,
@@ -24,6 +26,33 @@ export default async function EditLoadPage({
     .maybeSingle()
 
   if (!load) notFound()
+
+  // Documents already attached to this load — passed into the form so the
+  // user can see what's there, delete, or add more.
+  const { data: docRows } = await supabase
+    .from("documents")
+    .select(
+      "id, type, file_path, file_name, mime_type, size_bytes, uploaded_at",
+    )
+    .eq("load_id", id)
+    .order("uploaded_at", { ascending: false })
+
+  const docs = await Promise.all(
+    (docRows ?? []).map(async (d) => {
+      const { data: signed } = await supabase.storage
+        .from("load-documents")
+        .createSignedUrl(d.file_path, 600)
+      return {
+        id: d.id,
+        type: d.type as ExistingDocument["type"],
+        file_name: d.file_name,
+        mime_type: d.mime_type,
+        size_bytes: Number(d.size_bytes),
+        uploaded_at: d.uploaded_at,
+        signed_url: signed?.signedUrl ?? null,
+      }
+    }),
+  )
 
   const [customersRes, driversRes, trucksRes, trailersRes] = await Promise.all([
     supabase
@@ -48,10 +77,15 @@ export default async function EditLoadPage({
       .order("trailer_number", { ascending: true }),
   ])
 
+  const trucks = await trucksWithMaintenanceWarnings(
+    supabase,
+    trucksRes.data ?? [],
+  )
+
   const options: LoadFormOptions = {
     customers: customersRes.data ?? [],
     drivers: driversRes.data ?? [],
-    trucks: trucksRes.data ?? [],
+    trucks,
     trailers: trailersRes.data ?? [],
   }
 
@@ -104,6 +138,8 @@ export default async function EditLoadPage({
 
     notes: load.notes ?? "",
     internal_notes: load.internal_notes ?? "",
+
+    status: load.status,
   }
 
   return (
@@ -123,8 +159,8 @@ export default async function EditLoadPage({
           <span className="font-mono">{load.load_number}</span>
         </h1>
         <p className="text-sm text-muted-foreground">
-          Status changes happen on the load detail page — this form covers
-          everything else.
+          Normal status changes still happen on the load detail page. The
+          status override below is for correcting mistakes.
         </p>
       </header>
 
@@ -134,6 +170,7 @@ export default async function EditLoadPage({
           kind: "edit",
           loadId: load.id,
           initialValues,
+          documents: docs,
         }}
       />
     </div>

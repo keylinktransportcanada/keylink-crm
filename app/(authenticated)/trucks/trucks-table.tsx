@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { format, parseISO } from "date-fns"
-import { Hash } from "lucide-react"
+import { Hash, ShieldAlert } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
 import {
@@ -105,6 +105,7 @@ export function TrucksTable({ trucks }: { trucks: TruckRow[] }) {
                 { label: "Safety sticker", date: t.safety_sticker_expiry },
                 { label: "CVOR cert", date: t.cvor_certificate_expiry },
               ])
+              const isOOS = t.status === "out_of_service"
               return (
                 <PreviewCard key={t.id}>
                   <PreviewCardTrigger
@@ -120,7 +121,12 @@ export function TrucksTable({ trucks }: { trucks: TruckRow[] }) {
                             navigateTo(t.id)
                           }
                         }}
-                        className="cursor-pointer transition-colors hover:bg-muted/40 focus-visible:bg-muted/40 focus-visible:outline-none"
+                        className={cn(
+                          "cursor-pointer transition-colors focus-visible:outline-none",
+                          isOOS
+                            ? "bg-red-50 hover:bg-red-100 focus-visible:bg-red-100 [&>td]:border-y-2 [&>td]:border-red-200 [&>td:first-child]:border-l-2 [&>td:first-child]:border-l-red-500 [&>td:last-child]:border-r-2"
+                            : "hover:bg-muted/40 focus-visible:bg-muted/40",
+                        )}
                       />
                     }
                   >
@@ -149,14 +155,26 @@ export function TrucksTable({ trucks }: { trucks: TruckRow[] }) {
                         : "—"}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        className={cn(
-                          "border-transparent",
-                          STATUS_TONE[t.status],
-                        )}
-                      >
-                        {EQUIPMENT_STATUS_LABEL[t.status]}
-                      </Badge>
+                      {isOOS ? (
+                        <span
+                          className={cn(
+                            "inline-flex items-center gap-1.5 rounded-md border border-red-400 bg-red-500 px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-sm",
+                            "[animation:keylink-rise_0.6s_cubic-bezier(0.22,1,0.36,1)_both]",
+                          )}
+                        >
+                          <ShieldAlert className="size-3.5" />
+                          Out of service
+                        </span>
+                      ) : (
+                        <Badge
+                          className={cn(
+                            "border-transparent",
+                            STATUS_TONE[t.status],
+                          )}
+                        >
+                          {EQUIPMENT_STATUS_LABEL[t.status]}
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       {expiry ? (

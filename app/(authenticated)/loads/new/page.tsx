@@ -3,6 +3,7 @@ import { ChevronLeft } from "lucide-react"
 
 import { requireRole } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/server"
+import { trucksWithMaintenanceWarnings } from "@/lib/maintenance/load-form-trucks"
 
 import { LoadForm, type LoadFormOptions } from "../load-form"
 
@@ -33,10 +34,15 @@ export default async function NewLoadPage() {
       .order("trailer_number", { ascending: true }),
   ])
 
+  const trucks = await trucksWithMaintenanceWarnings(
+    supabase,
+    trucksRes.data ?? [],
+  )
+
   const options: LoadFormOptions = {
     customers: customersRes.data ?? [],
     drivers: driversRes.data ?? [],
-    trucks: trucksRes.data ?? [],
+    trucks,
     trailers: trailersRes.data ?? [],
   }
 

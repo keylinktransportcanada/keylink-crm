@@ -27,6 +27,7 @@ export type EmployeeRow = {
   employee_id: string | null
   role: (typeof ROLE_VALUES)[number]
   phone: string | null
+  email: string | null
   active: boolean
   avatar_url: string | null
   created_at: string
