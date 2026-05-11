@@ -27,6 +27,11 @@ export type Notification = {
   rank: number
   // Display tag: how this entry should be labeled in the bell.
   tag: string
+  // ISO timestamp the bell renders as a relative "5m ago" label. Only set
+  // for notifications that have a meaningful event time (inspection messages,
+  // status transitions, inspection corrections). Expiries use the date in the
+  // body instead.
+  timestamp?: string
 }
 
 const STATUS_TAG: Partial<Record<LoadStatus, string>> = {
@@ -141,6 +146,7 @@ export async function getNotificationsFor(
         body: m.message,
         href,
         rank: 1_700_000 + new Date(m.created_at).getTime() / 1000,
+        timestamp: m.created_at,
       })
     }
   }
@@ -215,6 +221,7 @@ export async function getNotificationsFor(
         // Slightly below open-major rank so unresolved items still lead the
         // bell, but above expiries.
         rank: 1_500_000 + new Date(c.corrected_at).getTime() / 1000,
+        timestamp: c.corrected_at,
       })
     }
   }
@@ -271,6 +278,7 @@ export async function getNotificationsFor(
         href: `/trucks/${i.truck_id}`,
         // Push above expiry items so OOS trucks lead the bell.
         rank: 2_000_000 + new Date(i.inspection_date).getTime() / 1000,
+        timestamp: i.inspection_date,
       })
     }
   }
@@ -457,9 +465,12 @@ export async function getNotificationsFor(
         severity: sev,
         tag: STATUS_TAG[e.status as LoadStatus] ?? LOAD_STATUS_LABEL[e.status],
         title: `${loadNumber} → ${LOAD_STATUS_LABEL[e.status]}`,
-        body: timeAgo(e.created_at),
+        // Body is empty for status events since the timestamp now renders on
+        // its own line in the row.
+        body: "",
         href: `/loads/${e.load_id}`,
         rank: new Date(e.created_at).getTime() / 1000,
+        timestamp: e.created_at,
       })
     }
   }

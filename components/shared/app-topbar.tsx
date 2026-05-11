@@ -341,6 +341,7 @@ export function AppTopbar({
                     <NotificationRow
                       key={n.id}
                       notification={n}
+                      seen={seenIds?.has(n.id) ?? false}
                       onNavigate={() => setPopoverOpen(false)}
                     />
                   ))}
@@ -356,6 +357,7 @@ export function AppTopbar({
                     <NotificationRow
                       key={n.id}
                       notification={n}
+                      seen={seenIds?.has(n.id) ?? false}
                       onNavigate={() => setPopoverOpen(false)}
                     />
                   ))}
@@ -371,6 +373,7 @@ export function AppTopbar({
                     <NotificationRow
                       key={n.id}
                       notification={n}
+                      seen={seenIds?.has(n.id) ?? false}
                       onNavigate={() => setPopoverOpen(false)}
                     />
                   ))}
@@ -445,6 +448,7 @@ export function AppTopbar({
                     <NotificationRow
                       key={n.id}
                       notification={n}
+                      seen={seenIds?.has(n.id) ?? false}
                       onNavigate={() => setChatOpen(false)}
                     />
                   ))}
@@ -560,24 +564,53 @@ function SectionHeader({
   )
 }
 
+// Client-side relative time. The server's timeAgo() runs once at request
+// time, so a value rendered there goes stale as the popover sits open; this
+// version recomputes on every render of the row.
+function relativeTime(iso: string): string {
+  const ms = Date.now() - new Date(iso).getTime()
+  const minutes = Math.round(ms / 60_000)
+  if (minutes < 1) return "just now"
+  if (minutes < 60) return `${minutes}m ago`
+  const hours = Math.round(minutes / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.round(hours / 24)
+  if (days === 1) return "yesterday"
+  if (days < 7) return `${days}d ago`
+  // Past the bell's 7-day window — fall back to a date stamp.
+  try {
+    return new Date(iso).toLocaleDateString("en-CA", {
+      month: "short",
+      day: "numeric",
+    })
+  } catch {
+    return `${days}d ago`
+  }
+}
+
 function NotificationRow({
   notification,
+  seen = false,
   onNavigate,
 }: {
   notification: Notification
+  seen?: boolean
   onNavigate: () => void
 }) {
   return (
     <Link
       href={notification.href}
       onClick={onNavigate}
-      className="flex items-start gap-3 border-b border-white/5 px-4 py-3 transition-colors hover:bg-white/[0.06] last:border-b-0"
+      className={cn(
+        "flex items-start gap-3 border-b border-white/5 px-4 py-3 transition-colors hover:bg-white/[0.06] last:border-b-0",
+        seen && "opacity-55",
+      )}
     >
       <span
         aria-hidden="true"
         className={cn(
           "mt-1.5 size-2 shrink-0 rounded-full",
-          SEVERITY_DOT[notification.severity],
+          seen ? "bg-white/20" : SEVERITY_DOT[notification.severity],
         )}
       />
       <div className="flex flex-1 flex-col gap-1 leading-tight">
@@ -594,7 +627,20 @@ function NotificationRow({
             {notification.tag}
           </span>
         </div>
-        <span className="text-xs text-brand-cloud/60">{notification.body}</span>
+        <div className="flex items-end justify-between gap-3">
+          {notification.body ? (
+            <span className="line-clamp-2 text-xs text-brand-cloud/60">
+              {notification.body}
+            </span>
+          ) : (
+            <span aria-hidden="true" />
+          )}
+          {notification.timestamp ? (
+            <span className="shrink-0 text-[10px] tabular-nums text-brand-cloud/50">
+              {relativeTime(notification.timestamp)}
+            </span>
+          ) : null}
+        </div>
       </div>
     </Link>
   )
