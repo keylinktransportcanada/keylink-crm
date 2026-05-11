@@ -32,14 +32,23 @@ export function RealtimeRefresher() {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "inspection_messages" },
-        scheduleRefresh,
+        (payload) => {
+          console.info("[realtime] inspection_messages event:", payload.eventType)
+          scheduleRefresh()
+        },
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "inspections" },
-        scheduleRefresh,
+        (payload) => {
+          console.info("[realtime] inspections event:", payload.eventType)
+          scheduleRefresh()
+        },
       )
-      .subscribe()
+      .subscribe((status, err) => {
+        console.info("[realtime] subscription status:", status)
+        if (err) console.error("[realtime] subscription error:", err)
+      })
 
     return () => {
       if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current)
