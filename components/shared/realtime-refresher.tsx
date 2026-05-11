@@ -40,7 +40,6 @@ export function RealtimeRefresher() {
 
       if (session?.access_token) {
         supabase.realtime.setAuth(session.access_token)
-        console.info("[realtime] auth attached for", session.user.email)
       } else {
         console.warn("[realtime] no session — events will be filtered as anon")
       }
@@ -50,22 +49,19 @@ export function RealtimeRefresher() {
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "inspection_messages" },
-          (payload) => {
-            console.info("[realtime] inspection_messages event:", payload.eventType)
-            scheduleRefresh()
-          },
+          scheduleRefresh,
         )
         .on(
           "postgres_changes",
           { event: "*", schema: "public", table: "inspections" },
-          (payload) => {
-            console.info("[realtime] inspections event:", payload.eventType)
-            scheduleRefresh()
-          },
+          scheduleRefresh,
         )
         .subscribe((status, err) => {
-          console.info("[realtime] subscription status:", status)
-          if (err) console.error("[realtime] subscription error:", err)
+          // Keep the status log on subscribe — it's a once-per-page heartbeat
+          // that's useful if something breaks later. Per-event logs were
+          // removed because they fired on every message arrival.
+          console.info("[realtime] status:", status)
+          if (err) console.error("[realtime] error:", err)
         })
     }
 
