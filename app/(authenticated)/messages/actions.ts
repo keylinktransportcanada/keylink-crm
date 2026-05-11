@@ -16,81 +16,24 @@ function safeExtension(filename: string): string {
 }
 
 // Returns the existing 1:1 thread between the current user and `otherProfileId`
-// or creates one. Idempotent: repeated calls with the same pair return the
-// same thread id.
+// or creates one. Atomic via the SECURITY DEFINER `create_direct_chat` RPC
+// so the thread + both member rows go in together — no RLS race between the
+// inserts.
 export async function getOrCreateDirectThread(
   otherProfileId: string,
 ): Promise<Result<{ thread_id: string }>> {
-  const me = await requireRole(["admin", "dispatcher", "driver", "accounting"])
-  if (me.id === otherProfileId) {
-    return { error: "Cannot start a chat with yourself." }
-  }
-
+  await requireRole(["admin", "dispatcher", "driver", "accounting"])
   const supabase = await createClient()
 
-  // Confirm the target profile exists and is active.
-  const { data: other, error: otherErr } = await supabase
-    .from("profiles")
-    .select("id, active")
-    .eq("id", otherProfileId)
-    .maybeSingle()
-  if (otherErr || !other) return { error: "Teammate not found." }
-  if (!other.active) return { error: "Teammate is inactive." }
-
-  // Find an existing direct thread where both of us are members.
-  const { data: mine } = await supabase
-    .from("chat_thread_members")
-    .select("thread_id, chat_threads!inner(type)")
-    .eq("profile_id", me.id)
-  const myThreadIds = (
-    mine as
-      | Array<{
-          thread_id: string
-          chat_threads: { type: string } | { type: string }[]
-        }>
-      | null
-  )
-    ?.filter((r) => {
-      const t = Array.isArray(r.chat_threads) ? r.chat_threads[0] : r.chat_threads
-      return t?.type === "direct"
-    })
-    .map((r) => r.thread_id) ?? []
-
-  if (myThreadIds.length > 0) {
-    const { data: shared } = await supabase
-      .from("chat_thread_members")
-      .select("thread_id")
-      .eq("profile_id", otherProfileId)
-      .in("thread_id", myThreadIds)
-      .limit(1)
-      .maybeSingle()
-    if (shared) {
-      return { ok: true, thread_id: shared.thread_id }
-    }
-  }
-
-  // None exists — create the thread and add both members.
-  const { data: thread, error: tErr } = await supabase
-    .from("chat_threads")
-    .insert({ type: "direct", created_by: me.id })
-    .select("id")
-    .single()
-  if (tErr || !thread) {
-    return { error: tErr?.message ?? "Failed to create thread." }
-  }
-
-  const { error: mErr } = await supabase.from("chat_thread_members").insert([
-    { thread_id: thread.id, profile_id: me.id },
-    { thread_id: thread.id, profile_id: otherProfileId },
-  ])
-  if (mErr) {
-    // Best-effort cleanup
-    await supabase.from("chat_threads").delete().eq("id", thread.id)
-    return { error: mErr.message }
+  const { data, error } = await supabase.rpc("create_direct_chat", {
+    p_other_profile_id: otherProfileId,
+  })
+  if (error || !data) {
+    return { error: error?.message ?? "Failed to create thread." }
   }
 
   revalidatePath("/messages")
-  return { ok: true, thread_id: thread.id }
+  return { ok: true, thread_id: data as string }
 }
 
 export async function sendChatMessage(formData: FormData): Promise<

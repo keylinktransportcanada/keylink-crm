@@ -1009,6 +1009,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_direct_chat: {
+        Args: { p_other_profile_id: string }
+        Returns: string
+      }
       has_role: {
         Args: { p_role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
