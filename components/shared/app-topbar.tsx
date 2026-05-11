@@ -463,16 +463,19 @@ export function AppTopbar({
               : "Team chat"
           }
           className={cn(
-            "relative inline-flex size-8 items-center justify-center rounded-md border border-white/15 bg-transparent text-brand-cloud transition-colors",
-            "hover:bg-white/5",
+            "relative inline-flex h-8 items-center gap-1.5 rounded-md border border-white/15 bg-transparent px-2.5 text-brand-cloud transition-colors",
+            "hover:bg-white/5 hover:border-white/25",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-light",
           )}
         >
-          <MessageCircle className="size-4" />
+          <MessageCircle className="size-4" aria-hidden="true" />
+          <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+            Chat
+          </span>
           {chatUnreadCount > 0 ? (
             <span
               aria-hidden="true"
-              className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold leading-none text-white ring-2 ring-brand-midnight"
+              className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold leading-none text-white ring-2 ring-brand-midnight"
             >
               {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
             </span>
