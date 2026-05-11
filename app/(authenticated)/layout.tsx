@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/shared/app-shell"
 import { InspectionMessageToast } from "@/components/shared/inspection-message-toast"
+import { RealtimeRefresher } from "@/components/shared/realtime-refresher"
 import { requireRole } from "@/lib/auth"
 import { getNotificationsFor } from "@/lib/notifications"
 import { getLatestInspectionMessageFor } from "@/lib/inspection-messages"
@@ -21,6 +22,7 @@ export default async function AuthenticatedLayout({
   ])
   return (
     <AppShell profile={profile} notifications={notifications}>
+      <RealtimeRefresher />
       <InspectionMessageToast notice={latestInspectionMessage} />
       {children}
     </AppShell>
