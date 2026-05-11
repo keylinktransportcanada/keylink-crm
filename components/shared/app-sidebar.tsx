@@ -34,11 +34,13 @@ export function AppSidebar({
   return (
     <>
       {/* Mobile: horizontal pills above the content. The hover-expand pattern
-          doesn't translate to touch, so we keep the existing scrollable bar. */}
+          doesn't translate to touch, so we keep the existing scrollable bar.
+          Sticky under the topbar so the whole nav header stays pinned while
+          the content scrolls beneath it. top-14 ≈ topbar height (56px). */}
       <nav
         aria-label="Primary"
         className={cn(
-          "relative flex shrink-0 gap-1 overflow-x-auto px-3 py-2 lg:hidden",
+          "sticky top-14 z-30 flex shrink-0 gap-1 overflow-x-auto px-3 py-2 lg:hidden",
           "border-b border-white/10 bg-brand-midnight/70 backdrop-blur-2xl backdrop-saturate-150",
           "[box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_4px_16px_-8px_rgba(10,14,26,0.45)]",
         )}

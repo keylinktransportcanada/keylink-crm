@@ -209,9 +209,11 @@ export function AppTopbar({
   return (
     <header
       className={cn(
-        // Sticky so the topbar tracks scroll. z-40 keeps it above the fixed
-        // sidebar rail (z-30) at every scroll position.
-        "sticky top-0 z-40 flex items-center justify-between px-4 py-3 lg:px-6",
+        // Sticky on mobile/tablet so the topbar (and the nav pill row that
+        // sits directly below it) stays glued to the top while scrolling.
+        // On desktop the rail is already fixed-position, so the topbar
+        // reverts to normal flow per past ops preference.
+        "sticky top-0 z-40 flex items-center justify-between px-4 py-3 lg:static lg:top-auto lg:z-auto lg:px-6",
         "border-b border-white/10 bg-brand-midnight/70 backdrop-blur-2xl backdrop-saturate-150",
         "[box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_4px_16px_-8px_rgba(10,14,26,0.45)]",
       )}
