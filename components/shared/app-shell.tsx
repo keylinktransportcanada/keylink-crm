@@ -6,15 +6,21 @@ import type { Notification } from "@/lib/notifications"
 export function AppShell({
   profile,
   notifications,
+  chatUnreadCount = 0,
   children,
 }: {
   profile: CurrentProfile
   notifications: Notification[]
+  chatUnreadCount?: number
   children: React.ReactNode
 }) {
   return (
     <div className="flex min-h-screen flex-1 flex-col bg-brand-midnight">
-      <AppTopbar profile={profile} notifications={notifications} />
+      <AppTopbar
+        profile={profile}
+        notifications={notifications}
+        chatUnreadCount={chatUnreadCount}
+      />
       <div className="flex flex-1 flex-col lg:flex-row">
         <AppSidebar
           role={profile.role}

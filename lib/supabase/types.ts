@@ -323,6 +323,7 @@ export type Database = {
           trailer_id: string | null
           inspection_id: string | null
           inspection_message_id: string | null
+          chat_message_id: string | null
           type: Database["public"]["Enums"]["document_type"]
           file_path: string
           file_name: string
@@ -340,6 +341,7 @@ export type Database = {
           trailer_id?: string | null
           inspection_id?: string | null
           inspection_message_id?: string | null
+          chat_message_id?: string | null
           type: Database["public"]["Enums"]["document_type"]
           file_path: string
           file_name: string
@@ -357,6 +359,7 @@ export type Database = {
           trailer_id?: string | null
           inspection_id?: string | null
           inspection_message_id?: string | null
+          chat_message_id?: string | null
           type?: Database["public"]["Enums"]["document_type"]
           file_path?: string
           file_name?: string
@@ -418,6 +421,116 @@ export type Database = {
           next_value?: number
         }
         Relationships: []
+      }
+      chat_threads: {
+        Row: {
+          id: string
+          type: Database["public"]["Enums"]["chat_thread_type"]
+          title: string | null
+          created_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          type?: Database["public"]["Enums"]["chat_thread_type"]
+          title?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          type?: Database["public"]["Enums"]["chat_thread_type"]
+          title?: string | null
+          created_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_threads_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_thread_members: {
+        Row: {
+          thread_id: string
+          profile_id: string
+          joined_at: string
+          last_read_at: string
+        }
+        Insert: {
+          thread_id: string
+          profile_id: string
+          joined_at?: string
+          last_read_at?: string
+        }
+        Update: {
+          thread_id?: string
+          profile_id?: string
+          joined_at?: string
+          last_read_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_thread_members_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_thread_members_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          id: string
+          thread_id: string
+          author_id: string
+          body: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          thread_id: string
+          author_id: string
+          body: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          thread_id?: string
+          author_id?: string
+          body?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chat_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       maintenance_records: {
         Row: {
@@ -907,6 +1020,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin" | "dispatcher" | "driver" | "accounting"
+      chat_thread_type: "direct" | "group"
       document_type:
         | "bol"
         | "pod"

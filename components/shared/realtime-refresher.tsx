@@ -56,6 +56,16 @@ export function RealtimeRefresher() {
           { event: "*", schema: "public", table: "inspections" },
           scheduleRefresh,
         )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "chat_messages" },
+          scheduleRefresh,
+        )
+        .on(
+          "postgres_changes",
+          { event: "*", schema: "public", table: "chat_thread_members" },
+          scheduleRefresh,
+        )
         .subscribe((status, err) => {
           // Keep the status log on subscribe — it's a once-per-page heartbeat
           // that's useful if something breaks later. Per-event logs were

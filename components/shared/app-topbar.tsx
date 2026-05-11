@@ -8,6 +8,7 @@ import {
   Bell,
   CalendarClock,
   CheckCircle2,
+  MessageCircle,
   MessageSquare,
   Search,
   Truck,
@@ -60,9 +61,11 @@ const SEEN_STORAGE_KEY = "keylink:notif-seen-ids"
 export function AppTopbar({
   profile,
   notifications,
+  chatUnreadCount = 0,
 }: {
   profile: CurrentProfile
   notifications: Notification[]
+  chatUnreadCount?: number
 }) {
   const [pending, startTransition] = useTransition()
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -446,6 +449,35 @@ export function AppTopbar({
             </div>
           </PopoverContent>
         </Popover>
+
+        <Link
+          href="/messages"
+          aria-label={
+            chatUnreadCount > 0
+              ? `Team chat: ${chatUnreadCount} unread`
+              : "Team chat"
+          }
+          title={
+            chatUnreadCount > 0
+              ? `Team chat — ${chatUnreadCount} unread`
+              : "Team chat"
+          }
+          className={cn(
+            "relative inline-flex size-8 items-center justify-center rounded-md border border-white/15 bg-transparent text-brand-cloud transition-colors",
+            "hover:bg-white/5",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-light",
+          )}
+        >
+          <MessageCircle className="size-4" />
+          {chatUnreadCount > 0 ? (
+            <span
+              aria-hidden="true"
+              className="absolute -right-0.5 -top-0.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold leading-none text-white ring-2 ring-brand-midnight"
+            >
+              {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+            </span>
+          ) : null}
+        </Link>
 
         <button
           type="button"
