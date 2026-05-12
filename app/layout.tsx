@@ -21,7 +21,11 @@ export const metadata: Metadata = {
   title: "Keylink Transport CRM",
   description: "Internal dispatch and operations CRM for Keylink Transport.",
   icons: {
-    icon: "/favicon.png",
+    icon: [
+      { url: "/favicon.png", type: "image/png" },
+    ],
+    shortcut: "/favicon.png",
+    apple: "/favicon.png",
   },
 }
 
