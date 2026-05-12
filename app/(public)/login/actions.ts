@@ -1,7 +1,11 @@
 "use server"
 
+import { headers } from "next/headers"
 import { redirect } from "next/navigation"
 
+import { sendEmail } from "@/lib/email"
+import { buildPasswordResetEmail } from "@/lib/emails/password-reset"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import {
   loginSchema,
@@ -9,6 +13,20 @@ import {
   type LoginInput,
   type PasswordResetRequestInput,
 } from "@/lib/schemas/auth"
+
+// Resolve the public site URL with three fallbacks so password-reset links
+// always point at the right origin:
+//   1. NEXT_PUBLIC_SITE_URL env (set on Netlify in prod)
+//   2. Request's x-forwarded-host (when serving behind Netlify proxy)
+//   3. host header (local dev)
+async function resolveSiteUrl(): Promise<string> {
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL
+  if (fromEnv) return fromEnv.replace(/\/$/, "")
+  const h = await headers()
+  const proto = h.get("x-forwarded-proto") ?? "https"
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? ""
+  return host ? `${proto}://${host}` : ""
+}
 
 type ActionResult = { error: string } | { ok: true } | undefined
 
@@ -39,13 +57,61 @@ export async function sendPasswordReset(
     return { error: "Please enter a valid email." }
   }
 
-  const supabase = await createClient()
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
-  await supabase.auth.resetPasswordForEmail(parsed.data.email, {
-    redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
-  })
+  const siteUrl = await resolveSiteUrl()
+  const admin = createAdminClient()
 
-  // Don't reveal whether the account exists; treat as success either way.
+  // Best-effort name lookup so the email can greet by first name.
+  // auth.users.email → users list → profiles. Silently skip if it fails.
+  let fullName: string | null = null
+  try {
+    const { data: userList } = await admin.auth.admin.listUsers()
+    const user = userList?.users.find(
+      (u) => u.email?.toLowerCase() === parsed.data.email.toLowerCase(),
+    )
+    if (user) {
+      const { data: p } = await admin
+        .from("profiles")
+        .select("full_name")
+        .eq("id", user.id)
+        .maybeSingle()
+      fullName = p?.full_name ?? null
+    }
+  } catch {
+    // Ignore — name is just a nicety.
+  }
+
+  // Mint a recovery link via admin API and send our branded email through
+  // Resend. If the email doesn't correspond to a user, generateLink will
+  // 400 — swallow it so we don't leak which addresses are registered.
+  try {
+    const { data: linkData, error: linkErr } =
+      await admin.auth.admin.generateLink({
+        type: "recovery",
+        email: parsed.data.email,
+        options: {
+          redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
+        },
+      })
+
+    if (!linkErr && linkData?.properties?.action_link) {
+      const { subject, html, text } = buildPasswordResetEmail({
+        fullName,
+        actionLink: linkData.properties.action_link,
+        loginUrl: `${siteUrl}/login`,
+      })
+      await sendEmail({
+        to: parsed.data.email,
+        subject,
+        html,
+        text,
+      })
+    }
+  } catch {
+    // Swallow — we don't reveal whether the email exists or whether
+    // sending succeeded.
+  }
+
+  // Always return ok to avoid leaking account existence.
   return { ok: true }
 }
 

@@ -1,5 +1,6 @@
 "use server"
 
+import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 
 import { requireRole } from "@/lib/auth"
@@ -17,6 +18,18 @@ import { getNextEmployeeId as rpcNextEmployeeId } from "@/lib/employee-id"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import { generateTempPassword } from "@/lib/temp-password"
+
+// Resolve the public site URL with env-then-header fallbacks so emailed
+// recovery links always carry the right origin even when the env var is
+// unset in a particular deploy context.
+async function resolveSiteUrl(): Promise<string> {
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL
+  if (fromEnv) return fromEnv.replace(/\/$/, "")
+  const h = await headers()
+  const proto = h.get("x-forwarded-proto") ?? "https"
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? ""
+  return host ? `${proto}://${host}` : ""
+}
 
 type FieldErrors = Partial<Record<string, string[]>>
 
@@ -116,7 +129,7 @@ export async function createEmployee(
   let emailSent = false
   let emailError: string | undefined
   try {
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
+    const siteUrl = await resolveSiteUrl()
     const { data: linkData, error: linkErr } =
       await admin.auth.admin.generateLink({
         type: "recovery",
