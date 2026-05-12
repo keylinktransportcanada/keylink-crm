@@ -2840,10 +2840,12 @@ function Kpi({
     </>
   )
 
-  // Liquid glass: brand-midnight backdrop + blur + 1px white inset highlight
-  // along the top edge + soft layered drop shadow. Matches PreviewCardContent.
+  // Solid brand-midnight backdrop so the KPI tiles read at the same color
+  // as the topbar/sidebar chrome — over a white dashboard background the
+  // earlier semi-transparent fill desaturated to grey. Drops the backdrop
+  // blur since there is nothing meaningful behind the tile to blur.
   const className = cn(
-    "relative isolate flex flex-col justify-between gap-1 overflow-hidden rounded-xl border border-white/10 bg-brand-midnight/80 text-brand-cloud backdrop-blur-2xl backdrop-saturate-150 [box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_24px_48px_-16px_rgba(10,14,26,0.45),0_4px_16px_-4px_rgba(10,14,26,0.25)]",
+    "relative isolate flex flex-col justify-between gap-1 overflow-hidden rounded-xl border border-white/10 bg-brand-midnight text-brand-cloud [box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_24px_48px_-16px_rgba(10,14,26,0.45),0_4px_16px_-4px_rgba(10,14,26,0.25)]",
     compact ? "p-3 gap-1.5" : "p-4 gap-2",
   )
 
@@ -2852,7 +2854,7 @@ function Kpi({
       href={href}
       className={cn(
         className,
-        "transition-colors hover:bg-brand-midnight/70 hover:border-white/15",
+        "transition-colors hover:border-white/15 hover:[filter:brightness(1.12)]",
       )}
     >
       {inner}
