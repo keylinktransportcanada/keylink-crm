@@ -661,7 +661,7 @@ function AnimatedTagline({ text }: { text: string }) {
       <span
         aria-hidden="true"
         className={cn(
-          "relative inline-flex select-none font-display text-sm uppercase tracking-[0.32em] leading-none text-brand-gold",
+          "relative inline-flex select-none font-sans text-xs font-semibold uppercase tracking-[0.18em] leading-none text-white",
         )}
       >
         {letters.map((c, i) => (

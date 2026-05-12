@@ -1,6 +1,8 @@
 // SVG donut chart of load counts by status group. Pure server component —
 // the data is precomputed in the dashboard query and the slices are rendered
 // with stroke-dasharray, no JS interactivity needed for v1.
+import Link from "next/link"
+
 import { cn } from "@/lib/utils"
 
 export type StatusBucket = {
@@ -71,7 +73,7 @@ export function LoadStatusDonut({
         ) : null}
       </div>
 
-      <div className="flex items-center gap-5">
+      <div className="flex flex-1 items-center gap-5">
         {/* Donut SVG */}
         <div className="relative shrink-0">
           <svg
@@ -144,6 +146,14 @@ export function LoadStatusDonut({
           ))}
         </ul>
       </div>
+
+      <Link
+        href="/loads"
+        className="mt-auto inline-flex items-center gap-1 self-start text-xs font-medium text-brand-teal hover:underline"
+      >
+        View full report
+        <span aria-hidden="true">→</span>
+      </Link>
     </section>
   )
 }

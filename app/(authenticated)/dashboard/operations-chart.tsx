@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
 import { format, parseISO } from "date-fns"
 import { ArrowDownRight, ArrowUpRight, LineChart } from "lucide-react"
 
@@ -67,7 +68,7 @@ export function OperationsChart({
   return (
     <section
       className={cn(
-        "relative isolate flex flex-col gap-3 overflow-hidden rounded-xl border border-border/70 bg-card p-4 text-foreground",
+        "relative isolate flex h-full flex-col gap-3 overflow-hidden rounded-xl border border-border/70 bg-card p-4 text-foreground",
         "shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]",
       )}
     >
@@ -104,7 +105,7 @@ export function OperationsChart({
         />
       </div>
 
-      <div className="relative">
+      <div className="relative flex-1 min-h-[170px]">
         <Chart
           series={series}
           mode={mode}
@@ -113,6 +114,14 @@ export function OperationsChart({
           valueFormatter={valueFormatter}
         />
       </div>
+
+      <Link
+        href="/reports"
+        className="inline-flex items-center gap-1 self-start text-xs font-medium text-brand-teal hover:underline"
+      >
+        View full report
+        <span aria-hidden="true">→</span>
+      </Link>
     </section>
   )
 }
@@ -237,18 +246,18 @@ function Chart({
 
   if (series.length === 0) {
     return (
-      <div className="flex h-[170px] items-center justify-center rounded-md border border-dashed border-border bg-muted/40 text-sm text-muted-foreground">
+      <div className="flex h-full min-h-[170px] items-center justify-center rounded-md border border-dashed border-border bg-muted/40 text-sm text-muted-foreground">
         No deliveries yet — chart will populate as loads complete.
       </div>
     )
   }
 
   return (
-    <div className="relative">
+    <div className="relative h-full">
       <svg
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
-        className="block h-[170px] w-full overflow-visible"
+        className="block h-full min-h-[170px] w-full overflow-visible"
         onMouseLeave={() => setHover(null)}
       >
         <defs>

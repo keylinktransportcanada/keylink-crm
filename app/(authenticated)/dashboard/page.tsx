@@ -187,11 +187,16 @@ export default async function DashboardPage() {
 
   return (
     <div className="flex flex-col gap-8">
-      <header className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-4xl font-bold tracking-tight text-brand-navy lg:text-[2.75rem] lg:leading-tight">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="font-sans text-[1.75rem] font-bold tracking-tight text-brand-navy sm:text-[2rem] lg:text-[2.25rem] lg:leading-[1.15]">
             Welcome back
-            {profile.full_name ? `, ${profile.full_name.split(" ")[0]}` : ""}
+            {profile.full_name
+              ? `, ${profile.full_name.split(" ")[0]}!`
+              : "!"}
+            <span aria-hidden="true" className="ml-2 inline-block">
+              👋
+            </span>
           </h1>
           <p className="text-sm text-muted-foreground">
             Here&apos;s what&apos;s happening with your fleet today.
@@ -663,7 +668,7 @@ async function DispatchView({
   }
 
   expiryAlerts.sort((a, b) => a.daysUntil - b.daysUntil)
-  const topExpiryAlerts = expiryAlerts.slice(0, 8)
+  const topExpiryAlerts = expiryAlerts.slice(0, 12)
 
   // Maintenance-due feed — every record with a next-due target where either
   // (a) the date is within 30 days or already past, or (b) the odometer
@@ -819,17 +824,35 @@ async function DispatchView({
       </div>
 
       {/* Out-of-service inspection alert lives directly under the KPI strip
-          and above the analytics grid so it can't be missed. */}
+          so a major defect can't be missed. */}
       {openInspectionItems.length > 0 ? (
         <InspectionAlertsCard items={openInspectionItems} />
       ) : null}
 
-      {topExpiryAlerts.length > 0 ? (
-        <ExpiryAlertsCard
-          items={topExpiryAlerts}
-          totalCount={expiryAlerts.length}
-        />
-      ) : null}
+      {/* Top analytics row — Live Fleet Map fills the bulk of the width, with
+          the compliance/expiry alert panel pinned alongside as a side rail.
+          Both cards stretch to identical heights via items-stretch + h-full
+          on the children. */}
+      <div className="grid items-stretch gap-3 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+        <OperationsMap points={mapPoints} />
+        {topExpiryAlerts.length > 0 ? (
+          <ExpiryAlertsCard
+            items={topExpiryAlerts}
+            totalCount={expiryAlerts.length}
+            compact
+          />
+        ) : (
+          <section className="flex h-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-center">
+            <BadgeCheck className="size-6 text-emerald-500" aria-hidden="true" />
+            <p className="text-sm font-medium text-foreground">
+              No compliance items expiring soon
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Nothing on file is due in the next 90 days.
+            </p>
+          </section>
+        )}
+      </div>
 
       {topMaintenanceAlerts.length > 0 ? (
         <MaintenanceDueCard
@@ -838,20 +861,18 @@ async function DispatchView({
         />
       ) : null}
 
-      {/* Three-column, two-row dashboard grid. All cards are direct grid
-          children so rows synchronize across columns:
-            Row 1 — Chart | LBoard | Donut         (all same height)
-            Row 2 — Map   | RecentActivity (cols 2+3, same height as Map)
-          Each card stretches to fill its cell so heights line up cleanly. */}
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)_minmax(0,1fr)] lg:grid-rows-[auto_auto]">
+      {/* Bottom analytics row — four equal cards: Revenue · Live load board ·
+          Load status · Recent activity. Matches the reference dashboard's
+          tidy four-up bottom strip. */}
+      <div className="grid items-stretch gap-3 lg:grid-cols-4">
         <OperationsChart
           series={series}
           previousTotalRevenue={previous.revenue}
           previousTotalCount={previous.count}
-          title="Operations"
+          title="Revenue"
         />
 
-        <section className="flex flex-col gap-2 overflow-hidden rounded-xl border border-border/70 bg-card p-3 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]">
+        <section className="flex h-full flex-col gap-2 overflow-hidden rounded-xl border border-border/70 bg-card p-3 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]">
           <div className="flex items-center justify-between">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-2">
@@ -867,15 +888,9 @@ async function DispatchView({
                 Active loads sorted by pickup date.
               </p>
             </div>
-            <Link
-              href="/loads"
-              className="text-xs font-medium text-brand-teal hover:underline"
-            >
-              View all →
-            </Link>
           </div>
           {boardLoads.length === 0 ? (
-            <div className="rounded-md border border-dashed border-border bg-muted/20 p-6 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center rounded-md border border-dashed border-border bg-muted/20 p-6 text-center">
               <p className="text-sm text-muted-foreground">
                 No active loads. Create one to get the board moving.
               </p>
@@ -891,8 +906,8 @@ async function DispatchView({
               </Link>
             </div>
           ) : (
-            <ul className="flex flex-col divide-y divide-border overflow-y-auto pr-1">
-              {boardLoads.slice(0, 12).map((l) => (
+            <ul className="flex flex-1 flex-col divide-y divide-border overflow-y-auto pr-1">
+              {boardLoads.slice(0, 8).map((l) => (
                 <li key={l.id}>
                   <Link
                     href={`/loads/${l.id}`}
@@ -931,15 +946,18 @@ async function DispatchView({
               ))}
             </ul>
           )}
+          <Link
+            href="/loads"
+            className="mt-auto inline-flex items-center gap-1 self-start text-xs font-medium text-brand-teal hover:underline"
+          >
+            View full load board
+            <span aria-hidden="true">→</span>
+          </Link>
         </section>
 
         <LoadStatusDonut buckets={statusBuckets} total={statusBucketTotal} />
 
-        <OperationsMap points={mapPoints} />
-
-        <div className="lg:col-span-2">
-          <RecentActivity items={activityItems} />
-        </div>
+        <RecentActivity items={activityItems} />
       </div>
 
       {crossingsToday.length > 0 ? (
@@ -2194,6 +2212,7 @@ function DriverInspectionHistoryWidget({
 function ExpiryAlertsCard({
   items,
   totalCount,
+  compact = false,
 }: {
   items: Array<{
     id: string
@@ -2206,6 +2225,7 @@ function ExpiryAlertsCard({
     severity: "expired" | "critical" | "warning" | "ok"
   }>
   totalCount: number
+  compact?: boolean
 }) {
   const ENTITY_TONE: Record<string, string> = {
     truck: "bg-blue-500/15 text-blue-700",
@@ -2213,6 +2233,94 @@ function ExpiryAlertsCard({
     driver: "bg-emerald-500/15 text-emerald-700",
     document: "bg-amber-500/15 text-amber-700",
   }
+
+  if (compact) {
+    // Side-panel layout that matches the reference dashboard: single-column
+    // list, big header line with item count, "View all" pinned top-right.
+    // List is sized to fill the side rail alongside the map, so the panel
+    // doesn't bottom out empty.
+    const visible = items.slice(0, 10)
+    return (
+      <section className="flex h-full flex-col gap-3 rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50/70 to-white p-4 shadow-[0_1px_2px_rgba(217,119,6,0.06),0_8px_24px_-12px_rgba(217,119,6,0.18)]">
+        <div className="flex items-start gap-3">
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-white shadow-[0_4px_12px_-2px_rgba(217,119,6,0.45)]">
+            <ShieldAlert className="size-4" aria-hidden="true" />
+          </span>
+          <div className="flex flex-1 flex-col gap-0.5 leading-tight">
+            <p className="text-sm font-semibold text-amber-900">
+              {totalCount} compliance{" "}
+              {totalCount === 1 ? "item" : "items"} expiring in the next
+              90 days
+            </p>
+            <p className="text-xs text-amber-800/80">
+              Renew or upload to keep your fleet legal at the border and
+              roadside.
+            </p>
+          </div>
+          <Link
+            href="/compliance"
+            className="shrink-0 rounded-md border border-amber-300/60 bg-white/70 px-2.5 py-1 text-[11px] font-medium text-amber-900 transition-colors hover:bg-white"
+          >
+            View all
+          </Link>
+        </div>
+        <ul className="flex flex-1 flex-col gap-1.5 overflow-y-auto">
+          {visible.map((it) => (
+            <li key={it.id}>
+              <Link
+                href={it.href}
+                className={cn(
+                  "flex items-center justify-between gap-3 rounded-lg bg-white/70 px-3 py-2 text-xs transition-colors",
+                  "hover:bg-white hover:shadow-sm focus-visible:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-400",
+                )}
+              >
+                <div className="flex min-w-0 flex-1 items-center gap-2 leading-tight">
+                  <span className="font-mono text-sm font-semibold text-brand-navy">
+                    {it.entity}
+                  </span>
+                  <span className="truncate text-muted-foreground">
+                    {it.field}
+                  </span>
+                </div>
+                <div className="flex shrink-0 items-center gap-2 leading-tight">
+                  <span
+                    className={cn(
+                      "rounded-md px-1.5 py-0.5 text-[10px] font-semibold",
+                      SEVERITY_TONE[it.severity],
+                    )}
+                  >
+                    {it.daysUntil < 0
+                      ? `Expired ${relativeExpiryLabel(it.daysUntil)}`
+                      : `Expires ${relativeExpiryLabel(it.daysUntil)}`}
+                  </span>
+                  <span className="tabular-nums text-muted-foreground">
+                    {format(parseISO(it.date), "MMM d, yyyy")}
+                  </span>
+                  <ChevronRight
+                    className="size-3.5 text-muted-foreground"
+                    aria-hidden="true"
+                  />
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+        {totalCount > visible.length ? (
+          <Link
+            href="/compliance"
+            className="text-[11px] font-medium text-amber-800/80 hover:text-amber-900"
+          >
+            +{totalCount - visible.length} more items
+            <ChevronRight
+              className="ml-0.5 inline size-3"
+              aria-hidden="true"
+            />
+          </Link>
+        ) : null}
+      </section>
+    )
+  }
+
   return (
     <section className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50/60 p-4 shadow-[0_1px_2px_rgba(217,119,6,0.06),0_8px_24px_-12px_rgba(217,119,6,0.18)]">
       <div className="flex items-start gap-3">

@@ -66,8 +66,12 @@ function timeAgo(iso: string): string {
 }
 
 export function RecentActivity({ items }: { items: ActivityItem[] }) {
+  // Cap the visible list so this card has the same density as its row
+  // neighbours (Revenue chart, Live Load Board, Load Status). Extras roll up
+  // into the "View all" link.
+  const visible = items.slice(0, 6)
   return (
-    <section className="flex flex-col gap-2 rounded-xl border border-border/70 bg-card p-3 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]">
+    <section className="flex h-full flex-col gap-2 rounded-xl border border-border/70 bg-card p-3 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span
@@ -82,12 +86,12 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
           href="/loads"
           className="text-xs font-medium text-brand-teal hover:underline"
         >
-          View all →
+          View all activity →
         </Link>
       </div>
 
-      {items.length === 0 ? (
-        <div className="rounded-md border border-dashed border-border bg-muted/20 p-6 text-center">
+      {visible.length === 0 ? (
+        <div className="flex flex-1 flex-col items-center justify-center rounded-md border border-dashed border-border bg-muted/20 p-6 text-center">
           <Clock
             className="mx-auto size-6 text-muted-foreground/50"
             aria-hidden="true"
@@ -97,8 +101,8 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
           </p>
         </div>
       ) : (
-        <ul className="flex flex-col gap-1">
-          {items.map((item) => {
+        <ul className="flex flex-1 flex-col gap-1 overflow-hidden">
+          {visible.map((item) => {
             const Icon = STATUS_ICON[item.status]
             return (
               <li key={item.id}>
