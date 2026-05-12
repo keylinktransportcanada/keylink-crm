@@ -43,6 +43,8 @@ import { createEmployee, getNextEmployeeIdAction } from "./actions"
 type TempPasswordData = {
   password: string
   employeeId: string
+  emailSent: boolean
+  emailError?: string
 }
 
 export function AddEmployeeButton() {
@@ -133,6 +135,8 @@ function AddDialog({
       onCreated({
         password: result.tempPassword,
         employeeId: result.employeeId,
+        emailSent: result.emailSent,
+        emailError: result.emailError,
       })
     })
   }
@@ -294,10 +298,26 @@ function TempPasswordDialog({
           <DialogTitle>Employee created</DialogTitle>
           <DialogDescription>
             {data?.employeeId ? `${data.employeeId} has been created. ` : ""}
-            Copy the temporary password — you won&apos;t see it again.
+            {data?.emailSent
+              ? "A welcome email with a set-password link has been sent to them — no need to share this password."
+              : "Copy the temporary password and share it with them — you won't see it again."}
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-3">
+          {data?.emailSent ? (
+            <div className="flex items-start gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
+              <Check className="mt-0.5 size-4 shrink-0" />
+              <span>
+                Welcome email sent. They&apos;ll click the link in the email to
+                set their own password.
+              </span>
+            </div>
+          ) : data?.emailError ? (
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+              Welcome email couldn&apos;t send — share the temp password below
+              manually. (Details: {data.emailError})
+            </div>
+          ) : null}
           <div className="flex items-center gap-2 rounded-md border border-border bg-muted/30 p-3">
             <code className="flex-1 truncate font-mono text-sm">
               {data?.password ?? ""}
@@ -314,6 +334,11 @@ function TempPasswordDialog({
               )}
             </Button>
           </div>
+          <p className="text-xs text-muted-foreground">
+            {data?.emailSent
+              ? "Fallback only — use this if the email gets lost or the link expires."
+              : "This is the only time the temporary password will be shown."}
+          </p>
           <label className="flex items-start gap-2 text-sm">
             <input
               type="checkbox"
@@ -322,7 +347,9 @@ function TempPasswordDialog({
               className="mt-0.5"
             />
             <span>
-              I&apos;ve copied the password and stored it somewhere safe.
+              {data?.emailSent
+                ? "Got it — the new hire will get the welcome email shortly."
+                : "I've copied the password and stored it somewhere safe."}
             </span>
           </label>
         </div>

@@ -11,6 +11,8 @@ import {
   type SetPasswordInput,
   type UpdateEmployeeInput,
 } from "@/lib/schemas/employees"
+import { sendEmail } from "@/lib/email"
+import { buildWelcomeEmail } from "@/lib/emails/welcome"
 import { getNextEmployeeId as rpcNextEmployeeId } from "@/lib/employee-id"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
@@ -19,7 +21,13 @@ import { generateTempPassword } from "@/lib/temp-password"
 type FieldErrors = Partial<Record<string, string[]>>
 
 type CreateResult =
-  | { ok: true; tempPassword: string; employeeId: string }
+  | {
+      ok: true
+      tempPassword: string
+      employeeId: string
+      emailSent: boolean
+      emailError?: string
+    }
   | { error: FieldErrors }
 
 type UpdateResult = { ok: true } | { error: FieldErrors }
@@ -101,12 +109,57 @@ export async function createEmployee(
     }
   }
 
+  // Welcome email — generate a single-use Supabase recovery link so the
+  // new hire can set their own password without ever seeing the temp one.
+  // We still return the temp password to the admin as a fallback in case
+  // the email fails to deliver or the link expires unread.
+  let emailSent = false
+  let emailError: string | undefined
+  try {
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? ""
+    const { data: linkData, error: linkErr } =
+      await admin.auth.admin.generateLink({
+        type: "recovery",
+        email: parsed.data.email,
+        options: {
+          redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
+        },
+      })
+
+    if (linkErr || !linkData?.properties?.action_link) {
+      emailError = linkErr?.message ?? "Could not generate set-password link."
+    } else {
+      const { subject, html, text } = buildWelcomeEmail({
+        fullName: parsed.data.full_name,
+        employeeId: parsed.data.employee_id,
+        role: parsed.data.role,
+        actionLink: linkData.properties.action_link,
+        loginUrl: `${siteUrl}/login`,
+      })
+      const sendResult = await sendEmail({
+        to: parsed.data.email,
+        subject,
+        html,
+        text,
+      })
+      if (sendResult.ok) {
+        emailSent = true
+      } else {
+        emailError = sendResult.error
+      }
+    }
+  } catch (err) {
+    emailError = err instanceof Error ? err.message : "Unknown email error"
+  }
+
   revalidatePath("/admin/employees")
 
   return {
     ok: true,
     tempPassword,
     employeeId: parsed.data.employee_id,
+    emailSent,
+    emailError,
   }
 }
 
