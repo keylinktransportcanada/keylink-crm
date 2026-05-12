@@ -2811,7 +2811,7 @@ function Kpi({
             className="size-1.5 rounded-full bg-brand-gold"
             aria-hidden="true"
           />
-          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-brand-cloud/65">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white">
             {label}
           </span>
         </div>
@@ -2840,18 +2840,26 @@ function Kpi({
     </>
   )
 
-  // Solid brand-midnight backdrop so the KPI tiles read at the same color
-  // as the topbar/sidebar chrome — over a white dashboard background the
-  // earlier semi-transparent fill desaturated to grey. Drops the backdrop
-  // blur since there is nothing meaningful behind the tile to blur.
+  // Same surface gradient as the Live Fleet Map — teal accent top-right,
+  // gold accent bottom-left, linear navy base — applied inline so the tile
+  // is identical to the map at a glance. Inline rather than via a Tailwind
+  // arbitrary class to dodge any utility-name collision.
   const className = cn(
-    "relative isolate flex flex-col justify-between gap-1 overflow-hidden rounded-xl border border-white/10 bg-brand-midnight text-brand-cloud [box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_24px_48px_-16px_rgba(10,14,26,0.45),0_4px_16px_-4px_rgba(10,14,26,0.25)]",
+    "relative isolate flex flex-col justify-between gap-1 overflow-hidden rounded-xl border border-white/10 text-brand-cloud [box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_24px_48px_-16px_rgba(10,14,26,0.45),0_4px_16px_-4px_rgba(10,14,26,0.25)]",
     compact ? "p-3 gap-1.5" : "p-4 gap-2",
   )
+  const surfaceStyle = {
+    background: [
+      "radial-gradient(ellipse at top right, rgba(34, 160, 146, 0.10), transparent 55%)",
+      "radial-gradient(ellipse at bottom left, rgba(240, 168, 32, 0.06), transparent 50%)",
+      "linear-gradient(180deg, #0d1426 0%, #0a0e1a 100%)",
+    ].join(", "),
+  } as const
 
   return href ? (
     <Link
       href={href}
+      style={surfaceStyle}
       className={cn(
         className,
         "transition-colors hover:border-white/15 hover:[filter:brightness(1.12)]",
@@ -2860,7 +2868,9 @@ function Kpi({
       {inner}
     </Link>
   ) : (
-    <div className={className}>{inner}</div>
+    <div style={surfaceStyle} className={className}>
+      {inner}
+    </div>
   )
 }
 
