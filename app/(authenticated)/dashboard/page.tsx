@@ -31,6 +31,7 @@ import {
   PreviewCardContent,
   PreviewCardTrigger,
 } from "@/components/ui/preview-card"
+import { NewsWidget } from "@/components/shared/news-widget"
 import { ROLE_META } from "@/components/shared/role-badge"
 import { requireRole, type CurrentProfile } from "@/lib/auth"
 import {
@@ -45,6 +46,7 @@ import {
   LOAD_STATUS_LABEL,
   type LOAD_STATUS_VALUES,
 } from "@/lib/schemas/loads"
+import { getIndustryNews } from "@/lib/news"
 import { createClient } from "@/lib/supabase/server"
 import { cn } from "@/lib/utils"
 
@@ -228,6 +230,7 @@ async function DispatchView({
     { data: customerRows, count: customersCount },
     employeesAgg,
     { data: deliveredEvents },
+    newsItems,
   ] = await Promise.all([
     supabase
       .from("loads")
@@ -267,6 +270,9 @@ async function DispatchView({
       .eq("status", "delivered")
       .gte("created_at", `${sixtyDaysAgo}T00:00:00Z`)
       .order("created_at", { ascending: true }),
+    // Industry news — cached hourly via fetch(revalidate) so we can keep
+    // it in this Promise.all without slowing the dashboard.
+    getIndustryNews(),
   ])
 
   const all = loads ?? []
@@ -975,6 +981,8 @@ async function DispatchView({
           />
         ) : null}
       </div>
+
+      <NewsWidget items={newsItems} />
     </div>
   )
 }
