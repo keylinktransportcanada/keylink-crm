@@ -147,3 +147,109 @@
     letter-spacing: 0.02em;
   }
 }
+
+/* Dashboard entrance choreography.
+   `.dash-stagger > *` cascades each direct child in with a fade + rise + soft
+   blur over ~520ms, staggered ~70ms per slot. `.dash-rows > *` is a tighter
+   variant for list rows (compliance, activity, etc.). Honors reduced-motion.
+   These classes are layered so utilities can still override them. */
+@keyframes dash-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.985);
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes dash-row-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dash-stagger > * {
+    animation: dash-rise 540ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    will-change: transform, opacity, filter;
+  }
+  .dash-stagger > *:nth-child(1) {
+    animation-delay: 0ms;
+  }
+  .dash-stagger > *:nth-child(2) {
+    animation-delay: 70ms;
+  }
+  .dash-stagger > *:nth-child(3) {
+    animation-delay: 140ms;
+  }
+  .dash-stagger > *:nth-child(4) {
+    animation-delay: 210ms;
+  }
+  .dash-stagger > *:nth-child(5) {
+    animation-delay: 280ms;
+  }
+  .dash-stagger > *:nth-child(6) {
+    animation-delay: 350ms;
+  }
+  .dash-stagger > *:nth-child(7) {
+    animation-delay: 420ms;
+  }
+  .dash-stagger > *:nth-child(8) {
+    animation-delay: 490ms;
+  }
+  .dash-stagger > *:nth-child(9) {
+    animation-delay: 560ms;
+  }
+  .dash-stagger > *:nth-child(10) {
+    animation-delay: 630ms;
+  }
+  .dash-stagger > *:nth-child(n + 11) {
+    animation-delay: 700ms;
+  }
+
+  .dash-rows > * {
+    animation: dash-row-rise 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  .dash-rows > *:nth-child(1) {
+    animation-delay: 60ms;
+  }
+  .dash-rows > *:nth-child(2) {
+    animation-delay: 110ms;
+  }
+  .dash-rows > *:nth-child(3) {
+    animation-delay: 160ms;
+  }
+  .dash-rows > *:nth-child(4) {
+    animation-delay: 210ms;
+  }
+  .dash-rows > *:nth-child(5) {
+    animation-delay: 260ms;
+  }
+  .dash-rows > *:nth-child(6) {
+    animation-delay: 310ms;
+  }
+  .dash-rows > *:nth-child(7) {
+    animation-delay: 360ms;
+  }
+  .dash-rows > *:nth-child(8) {
+    animation-delay: 410ms;
+  }
+  .dash-rows > *:nth-child(9) {
+    animation-delay: 460ms;
+  }
+  .dash-rows > *:nth-child(10) {
+    animation-delay: 510ms;
+  }
+  .dash-rows > *:nth-child(n + 11) {
+    animation-delay: 560ms;
+  }
+}

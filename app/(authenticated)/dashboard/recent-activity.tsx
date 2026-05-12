@@ -89,7 +89,7 @@ export function RecentActivity({ items }: { items: ActivityItem[] }) {
           </p>
         </div>
       ) : (
-        <ul className="flex flex-1 flex-col gap-1 overflow-hidden">
+        <ul className="dash-rows flex flex-1 flex-col gap-1 overflow-hidden">
           {visible.map((item) => {
             const Icon = STATUS_ICON[item.status]
             return (

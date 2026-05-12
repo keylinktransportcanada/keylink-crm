@@ -766,11 +766,11 @@ async function DispatchView({
   const topMaintenanceAlerts = maintenanceAlerts.slice(0, 6)
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="dash-stagger flex flex-col gap-6">
       <QuickActions />
 
       {/* KPIs as a single horizontal strip — six compact tiles. */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="dash-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Kpi
           compact
           icon={Activity}
@@ -827,7 +827,7 @@ async function DispatchView({
           the compliance/expiry alert panel pinned alongside as a side rail.
           Both cards stretch to identical heights via items-stretch + h-full
           on the children. */}
-      <div className="grid items-stretch gap-3 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+      <div className="dash-stagger grid items-stretch gap-3 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
         <OperationsMap points={mapPoints} />
         {topExpiryAlerts.length > 0 ? (
           <ExpiryAlertsCard
@@ -858,7 +858,7 @@ async function DispatchView({
       {/* Bottom analytics row — four equal cards: Revenue · Live load board ·
           Load status · Recent activity. Matches the reference dashboard's
           tidy four-up bottom strip. */}
-      <div className="grid items-stretch gap-3 lg:grid-cols-4">
+      <div className="dash-stagger grid items-stretch gap-3 lg:grid-cols-4">
         <OperationsChart
           series={series}
           previousTotalRevenue={previous.revenue}
@@ -966,7 +966,7 @@ async function DispatchView({
         </div>
       ) : null}
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
+      <div className="dash-stagger grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <CustomersCard
           customers={customerRows ?? []}
           total={customersCount ?? 0}
@@ -1085,8 +1085,8 @@ async function AccountingView() {
   )
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+    <div className="dash-stagger flex flex-col gap-6">
+      <div className="dash-stagger grid gap-4 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
         <OperationsChart
           series={series}
           previousTotalRevenue={previous.revenue}
@@ -1094,7 +1094,7 @@ async function AccountingView() {
           title="Revenue"
         />
 
-        <div className="grid auto-rows-fr grid-cols-2 gap-3">
+        <div className="dash-stagger grid auto-rows-fr grid-cols-2 gap-3">
           <Kpi
             compact
             icon={FileText}
@@ -1500,8 +1500,8 @@ async function DriverView({ profile }: { profile: CurrentProfile }) {
   )
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="dash-stagger flex flex-col gap-6">
+      <div className="dash-stagger grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Kpi
           icon={CalendarClock}
           label="Pickups today"
@@ -2264,7 +2264,7 @@ function ExpiryAlertsCard({
             View all
           </Link>
         </div>
-        <ul className="flex flex-1 flex-col gap-1.5 overflow-y-auto">
+        <ul className="dash-rows flex flex-1 flex-col gap-1.5 overflow-y-auto">
           {visible.map((it) => (
             <li key={it.id}>
               <Link
@@ -2338,7 +2338,7 @@ function ExpiryAlertsCard({
               fleet legal at the border and the roadside.
             </p>
           </div>
-          <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+          <ul className="dash-rows grid grid-cols-1 gap-1.5 sm:grid-cols-2">
             {items.map((it) => (
               <li key={it.id}>
                 <Link
@@ -2439,7 +2439,7 @@ function MaintenanceDueCard({
               Schedule the service before assigning these trucks to long runs.
             </p>
           </div>
-          <ul className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+          <ul className="dash-rows grid grid-cols-1 gap-1.5 sm:grid-cols-2">
             {items.map((it) => (
               <li key={it.id}>
                 <Link
