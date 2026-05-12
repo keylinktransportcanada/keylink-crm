@@ -36,7 +36,7 @@ export function AppShell({
             ).length
           }
         />
-        <main className="flex flex-1 flex-col bg-[#f4f6fa] p-4 lg:p-8">
+        <main className="route-cascade flex flex-1 flex-col bg-[#f4f6fa] p-4 lg:p-8">
           {children}
         </main>
       </div>

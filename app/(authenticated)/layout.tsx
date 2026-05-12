@@ -24,14 +24,19 @@ export default async function AuthenticatedLayout({
       getChatUnreadCountFor(profile.id),
     ])
   return (
-    <AppShell
-      profile={profile}
-      notifications={notifications}
-      chatUnreadCount={chatUnreadCount}
-    >
+    <>
+      {/* Effect-only nodes — render null (Refresher) or a hidden link
+          (toast). Hoisted out of <main> so they don't disrupt the
+          route-cascade animation's nth-child ordering. */}
       <RealtimeRefresher />
       <InspectionMessageToast notice={latestInspectionMessage} />
-      {children}
-    </AppShell>
+      <AppShell
+        profile={profile}
+        notifications={notifications}
+        chatUnreadCount={chatUnreadCount}
+      >
+        {children}
+      </AppShell>
+    </>
   )
 }
