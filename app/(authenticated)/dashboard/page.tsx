@@ -2828,11 +2828,14 @@ function Kpi({
           </span>
         ) : null}
       </div>
+      {/* Liquid Retina XDR–style rainbow wash on the value. Accent color is
+          reserved for the icon chip so this stays consistent across tiles. */}
       <span
         className={cn(
-          "font-display tracking-wide tabular-nums",
+          "font-display tracking-wide tabular-nums bg-clip-text text-transparent",
+          "bg-[linear-gradient(90deg,#6EE7B7_0%,#67E8F9_28%,#A5B4FC_52%,#FCD34D_76%,#FB923C_100%)]",
+          "drop-shadow-[0_1px_8px_rgba(255,255,255,0.08)]",
           compact ? "text-2xl" : "text-3xl",
-          ACCENT_TONE[accent],
         )}
       >
         {typeof value === "number" ? value.toLocaleString() : value}
