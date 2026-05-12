@@ -1,6 +1,7 @@
 import {
   BadgeCheck,
   Building2,
+  CircleDollarSign,
   Container,
   LayoutDashboard,
   Package,
@@ -60,6 +61,12 @@ export const NAV_ITEMS: NavItem[] = [
     href: "/trailers",
     icon: Container,
     roles: ["admin", "dispatcher", "accounting"],
+  },
+  {
+    label: "Accounting",
+    href: "/accounting",
+    icon: CircleDollarSign,
+    roles: ["admin", "accounting"],
   },
 ]
 
