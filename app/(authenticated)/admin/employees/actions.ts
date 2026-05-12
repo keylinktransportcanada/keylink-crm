@@ -135,18 +135,24 @@ export async function createEmployee(
         type: "recovery",
         email: parsed.data.email,
         options: {
-          redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
+          redirectTo: `${siteUrl}/auth/confirm?next=/reset-password`,
         },
       })
 
-    if (linkErr || !linkData?.properties?.action_link) {
+    // We build the action link from `hashed_token` and route it through
+    // /auth/confirm (which uses verifyOtp). Supabase's `action_link`
+    // returns an implicit-flow URL that our server route can't read,
+    // and was causing "link expired" bounces.
+    const tokenHash = linkData?.properties?.hashed_token
+    if (linkErr || !tokenHash) {
       emailError = linkErr?.message ?? "Could not generate set-password link."
     } else {
+      const actionLink = `${siteUrl}/auth/confirm?token_hash=${encodeURIComponent(tokenHash)}&type=recovery&next=/reset-password`
       const { subject, html, text } = buildWelcomeEmail({
         fullName: parsed.data.full_name,
         employeeId: parsed.data.employee_id,
         role: parsed.data.role,
-        actionLink: linkData.properties.action_link,
+        actionLink,
         loginUrl: `${siteUrl}/login`,
       })
       const sendResult = await sendEmail({

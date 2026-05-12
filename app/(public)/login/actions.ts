@@ -89,14 +89,20 @@ export async function sendPasswordReset(
         type: "recovery",
         email: parsed.data.email,
         options: {
-          redirectTo: `${siteUrl}/auth/callback?next=/reset-password`,
+          redirectTo: `${siteUrl}/auth/confirm?next=/reset-password`,
         },
       })
 
-    if (!linkErr && linkData?.properties?.action_link) {
+    // Use the hashed_token via our own /auth/confirm route instead of
+    // Supabase's action_link — the latter uses the implicit/fragment flow
+    // which our server-side callback can't read, causing "link expired"
+    // bounces. verifyOtp(token_hash) works cleanly server-side.
+    const tokenHash = linkData?.properties?.hashed_token
+    if (!linkErr && tokenHash) {
+      const actionLink = `${siteUrl}/auth/confirm?token_hash=${encodeURIComponent(tokenHash)}&type=recovery&next=/reset-password`
       const { subject, html, text } = buildPasswordResetEmail({
         fullName,
-        actionLink: linkData.properties.action_link,
+        actionLink,
         loginUrl: `${siteUrl}/login`,
       })
       await sendEmail({
