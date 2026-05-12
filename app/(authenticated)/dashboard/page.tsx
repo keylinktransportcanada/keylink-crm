@@ -54,6 +54,7 @@ import {
   OperationsChart,
   type ChartPoint,
 } from "./operations-chart"
+import { CountUp } from "./count-up"
 import { OperationsMap, type MapPoint } from "./operations-map"
 import { LoadStatusDonut, type StatusBucket } from "./load-status-donut"
 import { RecentActivity, type ActivityItem } from "./recent-activity"
@@ -2828,18 +2829,18 @@ function Kpi({
           </span>
         ) : null}
       </div>
-      {/* Liquid Retina XDR–style rainbow wash on the value. Accent color is
-          reserved for the icon chip so this stays consistent across tiles. */}
-      <span
+      {/* Liquid Retina XDR–style rainbow wash on the value, with elegant
+          count-up on mount. Accent color is reserved for the icon chip
+          so this stays consistent across tiles. */}
+      <CountUp
+        value={value}
         className={cn(
           "font-display tracking-wide tabular-nums bg-clip-text text-transparent",
           "bg-[linear-gradient(90deg,#6EE7B7_0%,#67E8F9_28%,#A5B4FC_52%,#FCD34D_76%,#FB923C_100%)]",
           "drop-shadow-[0_1px_8px_rgba(255,255,255,0.08)]",
           compact ? "text-2xl" : "text-3xl",
         )}
-      >
-        {typeof value === "number" ? value.toLocaleString() : value}
-      </span>
+      />
     </>
   )
 
