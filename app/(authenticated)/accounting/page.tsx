@@ -499,19 +499,28 @@ export default async function AccountingPage() {
         )}
       </section>
 
-      {/* IFTA placeholder -------------------------------------------- */}
-      <section className="flex flex-col gap-2 rounded-xl border border-dashed border-border/70 bg-card/50 p-5">
-        <div className="flex items-center gap-2">
-          <TrendingUp className="size-4 text-muted-foreground" />
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            IFTA quarter status
+      {/* IFTA entry point -------------------------------------------- */}
+      <Link
+        href="/accounting/ifta"
+        className="group flex items-start gap-4 rounded-xl border border-border/70 bg-card p-5 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)] transition-all hover:-translate-y-0.5 hover:border-brand-gold/40 hover:shadow-[0_4px_8px_rgba(18,41,74,0.06),0_16px_32px_-12px_rgba(18,41,74,0.18)]"
+      >
+        <span
+          className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-gold/15 text-brand-gold"
+          aria-hidden="true"
+        >
+          <TrendingUp className="size-5" />
+        </span>
+        <div className="flex flex-1 flex-col gap-1">
+          <h2 className="text-sm font-semibold text-brand-navy">
+            IFTA quarterly →
           </h2>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Fuel by jurisdiction, kilometres by jurisdiction, and quarterly
+            CSV export for filing (Apr 30 / Jul 31 / Oct 31 / Jan 31
+            deadlines).
+          </p>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Fuel-by-jurisdiction and trip-distance entry land in the next
-          chunk. CSV export for quarterly filing will follow.
-        </p>
-      </section>
+      </Link>
     </div>
   )
 }
