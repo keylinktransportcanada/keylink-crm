@@ -81,6 +81,19 @@ export async function createEmployee(
   if (updateErr) {
     // Roll back the auth user so we don't leak a half-onboarded account.
     await admin.auth.admin.deleteUser(userId)
+    // Postgres unique-violation = 23505. The only unique key we touch here
+    // is profiles.employee_id, so surface it as a field-level error rather
+    // than a raw DB toast — and tell the admin to retry, since the RPC
+    // self-heals.
+    if (updateErr.code === "23505") {
+      return {
+        error: {
+          employee_id: [
+            "That employee ID is already taken. Close this dialog and click Add again to get the next available one.",
+          ],
+        },
+      }
+    }
     return {
       error: {
         _form: [`Failed to set profile fields: ${updateErr.message}`],
