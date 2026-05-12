@@ -139,6 +139,48 @@ export async function uploadChatAttachment(
   return { ok: true, document_id: doc.id }
 }
 
+// Deletes a thread for everyone in it. Either party in a DM can do this.
+// Purges storage attachments first so the bucket doesn't accumulate orphans
+// (chat/<thread_id>/<msg_id>/<doc_id>.<ext>). Cascades on the table layer
+// handle messages, members, and attachment rows.
+export async function deleteChatThread(
+  threadId: string,
+): Promise<Result<object>> {
+  await requireRole(["admin", "dispatcher", "driver", "accounting"])
+  const supabase = await createClient()
+
+  // List every object under chat/<thread_id>/ and bulk-remove. Storage RLS
+  // already restricts this to thread members.
+  const prefix = `chat/${threadId}`
+  const objectPaths: string[] = []
+  // Recurse through the bucket tree. The bucket only has 2-3 levels deep
+  // (chat/<thread>/<msg>/<doc>.<ext>), so two list() calls are enough.
+  const { data: msgFolders } = await supabase.storage
+    .from("load-documents")
+    .list(prefix, { limit: 1000 })
+  for (const folder of msgFolders ?? []) {
+    const folderPath = `${prefix}/${folder.name}`
+    const { data: files } = await supabase.storage
+      .from("load-documents")
+      .list(folderPath, { limit: 1000 })
+    for (const file of files ?? []) {
+      objectPaths.push(`${folderPath}/${file.name}`)
+    }
+  }
+  if (objectPaths.length > 0) {
+    await supabase.storage.from("load-documents").remove(objectPaths)
+  }
+
+  const { error } = await supabase
+    .from("chat_threads")
+    .delete()
+    .eq("id", threadId)
+  if (error) return { error: error.message }
+
+  revalidatePath("/messages")
+  return { ok: true }
+}
+
 export async function markThreadRead(threadId: string): Promise<Result<object>> {
   const me = await requireRole(["admin", "dispatcher", "driver", "accounting"])
   const supabase = await createClient()

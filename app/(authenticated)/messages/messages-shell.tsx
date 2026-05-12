@@ -10,6 +10,7 @@ import {
   MessageSquarePlus,
   Paperclip,
   Send,
+  Trash2,
   Users,
   X,
 } from "lucide-react"
@@ -22,6 +23,7 @@ import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 
 import {
+  deleteChatThread,
   getOrCreateDirectThread,
   markThreadRead,
   sendChatMessage,
@@ -317,6 +319,12 @@ export function MessagesShell({
                       : `${activeThread.others.length + 1} members`}
                   </span>
                 </div>
+                <DeleteThreadButton
+                  threadId={activeThread.id}
+                  threadTitle={activeThread.title}
+                  busy={busy}
+                  startTransition={startTransition}
+                />
               </div>
               <div
                 ref={scrollRef}
@@ -404,6 +412,77 @@ export function MessagesShell({
       {/* Hide me away from layout, keep for accessibility */}
       <span className="sr-only">Signed in as {me.full_name}</span>
     </div>
+  )
+}
+
+function DeleteThreadButton({
+  threadId,
+  threadTitle,
+  busy,
+  startTransition,
+}: {
+  threadId: string
+  threadTitle: string
+  busy: boolean
+  startTransition: React.TransitionStartFunction
+}) {
+  const router = useRouter()
+  const [confirming, setConfirming] = useState(false)
+
+  const handleDelete = () => {
+    startTransition(async () => {
+      const result = await deleteChatThread(threadId)
+      if ("error" in result) {
+        toast.error(result.error)
+        setConfirming(false)
+        return
+      }
+      toast.success(`Deleted "${threadTitle}"`)
+      // Clear the ?thread param so the right pane resets to the empty state.
+      router.push("/messages")
+      router.refresh()
+    })
+  }
+
+  if (confirming) {
+    return (
+      <div className="flex items-center gap-2 rounded-md border border-red-200 bg-red-50 px-2 py-1">
+        <span className="text-[11px] font-medium text-red-900">
+          Delete for both sides?
+        </span>
+        <Button
+          type="button"
+          size="sm"
+          variant="destructive"
+          onClick={handleDelete}
+          disabled={busy}
+          className="h-7 px-2 text-xs"
+        >
+          {busy ? <Loader2 className="size-3 animate-spin" /> : null}
+          Delete
+        </Button>
+        <button
+          type="button"
+          onClick={() => setConfirming(false)}
+          className="text-[11px] text-muted-foreground hover:text-foreground"
+          disabled={busy}
+        >
+          Cancel
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => setConfirming(true)}
+      title="Delete conversation"
+      aria-label="Delete conversation"
+      className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-600"
+    >
+      <Trash2 className="size-4" />
+    </button>
   )
 }
 
