@@ -4,6 +4,7 @@ import {
   CircleDollarSign,
   Container,
   LayoutDashboard,
+  MessageCircle,
   Package,
   Truck,
   Users,
@@ -42,6 +43,12 @@ export const NAV_ITEMS: NavItem[] = [
     label: "Loads",
     href: "/loads",
     icon: Package,
+    roles: ["admin", "dispatcher", "driver", "accounting"],
+  },
+  {
+    label: "Chat",
+    href: "/messages",
+    icon: MessageCircle,
     roles: ["admin", "dispatcher", "driver", "accounting"],
   },
   {
