@@ -1,7 +1,13 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { format, parseISO } from "date-fns"
-import { ChevronLeft, FileDown, MapPin, Pencil } from "lucide-react"
+import {
+  ChevronLeft,
+  FileDown,
+  MapPin,
+  MessageCircle,
+  Pencil,
+} from "lucide-react"
 
 import { LoadDocumentsViewer } from "@/components/loads/load-documents-viewer"
 import type { DocumentType } from "@/lib/schemas/documents"
@@ -227,6 +233,15 @@ export default async function LoadDetailPage({
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {load.driver_id && (role === "admin" || role === "dispatcher") ? (
+            <Link
+              href={`/messages?with=${load.driver_id}`}
+              className={buttonVariants({ size: "sm" })}
+            >
+              <MessageCircle />
+              Chat with driver
+            </Link>
+          ) : null}
           {canInvoice ? (
             <a
               href={`/loads/${load.id}/invoice`}
