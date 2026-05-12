@@ -48,6 +48,8 @@ export type CustomerRow = {
   credit_limit_cad: number | null
   notes: string | null
   active: boolean
+  tax_id: string | null
+  tax_exempt: boolean
   created_at: string
 }
 

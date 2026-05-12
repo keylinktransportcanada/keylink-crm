@@ -191,6 +191,8 @@ export type Database = {
           notes: string | null
           payment_terms_days: number
           phone: string | null
+          tax_exempt: boolean
+          tax_id: string | null
           updated_at: string
         }
         Insert: {
@@ -206,6 +208,8 @@ export type Database = {
           notes?: string | null
           payment_terms_days?: number
           phone?: string | null
+          tax_exempt?: boolean
+          tax_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -221,6 +225,8 @@ export type Database = {
           notes?: string | null
           payment_terms_days?: number
           phone?: string | null
+          tax_exempt?: boolean
+          tax_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -749,6 +755,9 @@ export type Database = {
           rate_cad: number | null
           reference_number: string | null
           status: Database["public"]["Enums"]["load_status"]
+          tax_amount_cad: number
+          tax_jurisdiction: string | null
+          tax_rate_pct: number
           total_billed_cad: number | null
           trailer_id: string | null
           truck_id: string | null
@@ -796,6 +805,9 @@ export type Database = {
           rate_cad?: number | null
           reference_number?: string | null
           status?: Database["public"]["Enums"]["load_status"]
+          tax_amount_cad?: number
+          tax_jurisdiction?: string | null
+          tax_rate_pct?: number
           total_billed_cad?: number | null
           trailer_id?: string | null
           truck_id?: string | null
@@ -843,6 +855,9 @@ export type Database = {
           rate_cad?: number | null
           reference_number?: string | null
           status?: Database["public"]["Enums"]["load_status"]
+          tax_amount_cad?: number
+          tax_jurisdiction?: string | null
+          tax_rate_pct?: number
           total_billed_cad?: number | null
           trailer_id?: string | null
           truck_id?: string | null
@@ -1435,3 +1450,4 @@ export type LoadType = Enums<"load_type">
 export type LoadCurrency = Enums<"load_currency">
 export type EquipmentStatus = Enums<"equipment_status">
 export type TrailerType = Enums<"trailer_type">
+

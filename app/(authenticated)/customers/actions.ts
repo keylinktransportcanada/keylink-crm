@@ -27,6 +27,8 @@ function toRow(input: CustomerInput) {
     credit_limit_cad: input.credit_limit_cad ?? null,
     notes: input.notes || null,
     active: input.active,
+    tax_id: input.tax_id || null,
+    tax_exempt: input.tax_exempt,
   }
 }
 

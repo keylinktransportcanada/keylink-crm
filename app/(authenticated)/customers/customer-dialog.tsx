@@ -64,6 +64,8 @@ export function CustomerDialog({
             credit_limit_cad: customer.credit_limit_cad,
             notes: customer.notes ?? "",
             active: customer.active,
+            tax_id: customer.tax_id ?? "",
+            tax_exempt: customer.tax_exempt ?? false,
           }
         : {
             name: "",
@@ -76,6 +78,8 @@ export function CustomerDialog({
             credit_limit_cad: null,
             notes: "",
             active: true,
+            tax_id: "",
+            tax_exempt: false,
           },
   })
 
@@ -285,6 +289,44 @@ export function CustomerDialog({
                         }
                       />
                     </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <FormField
+                control={form.control}
+                name="tax_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>
+                      GST/HST number{" "}
+                      <span className="text-xs text-muted-foreground">
+                        (optional)
+                      </span>
+                    </FormLabel>
+                    <FormControl>
+                      <Input placeholder="e.g. 123456789 RT0001" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="tax_exempt"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tax status</FormLabel>
+                    <label className="flex h-8 cursor-pointer items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                      />
+                      <span>Tax-exempt (no GST/HST charged)</span>
+                    </label>
                     <FormMessage />
                   </FormItem>
                 )}

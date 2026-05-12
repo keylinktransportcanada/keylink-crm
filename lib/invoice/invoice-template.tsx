@@ -42,6 +42,9 @@ export type InvoiceLoad = {
   customs_broker: string | null
   pars_pass_number: string | null
   aci_aces_number: string | null
+  tax_rate_pct?: number | null
+  tax_amount_cad?: number | null
+  tax_jurisdiction?: string | null
 }
 
 export type InvoiceCustomer = {
@@ -52,6 +55,7 @@ export type InvoiceCustomer = {
   billing_address: string | null
   address: string | null
   payment_terms_days: number | null
+  tax_id?: string | null
 }
 
 export type InvoiceMeta = {
@@ -381,8 +385,16 @@ export function InvoicePdf({
 
   const subtotal =
     (linehaul ?? 0) + (fuel ?? 0) + (accessorials ?? 0)
-  const tax = 0  // Placeholder — accounting needs to confirm provincial HST/GST handling.
+  // Tax stored on the load (CAD always) — convert back to invoice currency
+  // for display so a USD-priced load shows the tax in USD too.
+  const taxRatePct = Number(load.tax_rate_pct ?? 0)
+  const taxCad = Number(load.tax_amount_cad ?? 0)
+  const tax = taxCad / fxRate
   const total = subtotal + tax
+  const taxLabel =
+    taxRatePct > 0
+      ? `${load.tax_jurisdiction && ["ON", "NB", "NL", "NS", "PE"].includes(load.tax_jurisdiction) ? "HST" : "GST"} ${taxRatePct % 1 === 0 ? taxRatePct.toFixed(0) : taxRatePct.toFixed(2)}%${load.tax_jurisdiction ? ` (${load.tax_jurisdiction})` : ""}`
+      : "Tax (zero-rated)"
 
   const billingAddress =
     customer.billing_address ?? customer.address ?? "Address on file"
@@ -601,7 +613,7 @@ export function InvoicePdf({
             </Text>
           </View>
           <View style={styles.totalsRow}>
-            <Text style={styles.totalsKey}>Tax (HST/GST)</Text>
+            <Text style={styles.totalsKey}>{taxLabel}</Text>
             <Text style={styles.totalsVal}>
               {formatMoney(tax, load.currency)}
             </Text>
@@ -614,11 +626,11 @@ export function InvoicePdf({
               {formatMoney(total, load.currency)}
             </Text>
           </View>
-          <Text style={styles.taxNote}>
-            Tax line is a placeholder — BC carrier place-of-supply rules
-            (GST/HST by destination, zero-rated on cross-border) to be
-            configured with accounting.
-          </Text>
+          {customer.tax_id ? (
+            <Text style={styles.taxNote}>
+              Customer GST/HST: {customer.tax_id}
+            </Text>
+          ) : null}
         </View>
 
         {/* FOOTER */}

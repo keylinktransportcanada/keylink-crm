@@ -27,6 +27,8 @@ export const customerSchema = z.object({
     .nullable(),
   notes: z.string().max(2000),
   active: z.boolean(),
+  tax_id: z.string().max(40),
+  tax_exempt: z.boolean(),
 })
 
 export type CustomerInput = z.infer<typeof customerSchema>

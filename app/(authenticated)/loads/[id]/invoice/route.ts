@@ -37,7 +37,7 @@ export async function GET(
   const { data: customer, error: customerErr } = await supabase
     .from("customers")
     .select(
-      "name, contact_name, email, phone, address, billing_address, payment_terms_days",
+      "name, contact_name, email, phone, address, billing_address, payment_terms_days, tax_id",
     )
     .eq("id", load.customer_id)
     .maybeSingle()

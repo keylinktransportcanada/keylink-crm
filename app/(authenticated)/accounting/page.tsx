@@ -83,13 +83,13 @@ export default async function AccountingPage() {
     supabase
       .from("loads")
       .select(
-        "id, load_number, customer_id, total_billed_cad, delivery_date",
+        "id, load_number, customer_id, total_billed_cad, delivery_date, tax_rate_pct, tax_amount_cad, tax_jurisdiction",
       )
       .eq("status", "invoiced"),
     supabase
       .from("loads")
       .select(
-        "id, load_number, customer_id, total_billed_cad, delivery_date",
+        "id, load_number, customer_id, total_billed_cad, delivery_date, tax_rate_pct, tax_amount_cad, tax_jurisdiction",
       )
       .eq("status", "paid")
       .order("updated_at", { ascending: false })
@@ -206,6 +206,45 @@ export default async function AccountingPage() {
     (s, l) => s + Number(l.total_billed_cad ?? 0),
     0,
   )
+
+  // ---------------------------------------------------------------------
+  // Tax collected this quarter — aggregated from invoiced + paid loads
+  // whose invoiced event landed inside the current quarter window.
+  // ---------------------------------------------------------------------
+  const now = new Date()
+  const currentQ = (Math.floor(now.getUTCMonth() / 3) + 1) as 1 | 2 | 3 | 4
+  const qStartMonth = (currentQ - 1) * 3 + 1
+  const qEndMonth = qStartMonth + 2
+  const year = now.getUTCFullYear()
+  const qStart = `${year}-${String(qStartMonth).padStart(2, "0")}-01`
+  const qEndLastDay = new Date(Date.UTC(year, qEndMonth, 0)).getUTCDate()
+  const qEnd = `${year}-${String(qEndMonth).padStart(2, "0")}-${String(qEndLastDay).padStart(2, "0")}`
+
+  type TaxAgg = { count: number; collected: number; rate: number }
+  const taxByJurisdiction = new Map<string, TaxAgg>()
+  let totalTaxCollected = 0
+  for (const l of [...(invoicedLoads ?? []), ...(paidLoads ?? [])]) {
+    const invoicedAt = invoicedAtByLoad.get(l.id)
+    if (!invoicedAt) continue
+    const day = invoicedAt.slice(0, 10)
+    if (day < qStart || day > qEnd) continue
+    const amount = Number(l.tax_amount_cad ?? 0)
+    if (amount <= 0) continue
+    const code = l.tax_jurisdiction ?? "—"
+    const entry =
+      taxByJurisdiction.get(code) ?? {
+        count: 0,
+        collected: 0,
+        rate: Number(l.tax_rate_pct ?? 0),
+      }
+    entry.count += 1
+    entry.collected += amount
+    taxByJurisdiction.set(code, entry)
+    totalTaxCollected += amount
+  }
+  const taxRows = Array.from(taxByJurisdiction.entries())
+    .map(([code, v]) => ({ code, ...v }))
+    .sort((a, b) => b.collected - a.collected)
 
   return (
     <div className="flex flex-col gap-6">
@@ -497,6 +536,86 @@ export default async function AccountingPage() {
             })}
           </ul>
         )}
+      </section>
+
+      {/* Tax collected this quarter ---------------------------------- */}
+      <section className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-5 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Receipt className="size-4 text-brand-gold" />
+            <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+              Tax collected · Q{currentQ} {year}
+            </h2>
+            <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold tabular-nums">
+              {formatCAD(totalTaxCollected)}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground tabular-nums">
+            {qStart} → {qEnd}
+          </p>
+        </div>
+        {taxRows.length === 0 ? (
+          <p className="rounded-md border border-dashed border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
+            No GST/HST collected on invoices issued this quarter yet.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  <th className="border-b border-border px-2 py-2 text-left">
+                    Jurisdiction
+                  </th>
+                  <th className="border-b border-border px-2 py-2 text-right">
+                    Rate
+                  </th>
+                  <th className="border-b border-border px-2 py-2 text-right">
+                    Invoices
+                  </th>
+                  <th className="border-b border-border px-2 py-2 text-right">
+                    Tax collected (CAD)
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {taxRows.map((r) => (
+                  <tr key={r.code}>
+                    <td className="border-b border-border/50 px-2 py-2.5">
+                      <span className="font-mono text-xs font-semibold">
+                        {r.code}
+                      </span>
+                    </td>
+                    <td className="border-b border-border/50 px-2 py-2.5 text-right tabular-nums">
+                      {r.rate % 1 === 0
+                        ? `${r.rate.toFixed(0)}%`
+                        : `${r.rate.toFixed(2)}%`}
+                    </td>
+                    <td className="border-b border-border/50 px-2 py-2.5 text-right tabular-nums">
+                      {r.count}
+                    </td>
+                    <td className="border-b border-border/50 px-2 py-2.5 text-right tabular-nums font-semibold">
+                      {formatCAD(r.collected)}
+                    </td>
+                  </tr>
+                ))}
+                <tr className="border-t-2 border-border font-semibold">
+                  <td className="px-2 py-2.5">Total</td>
+                  <td className="px-2 py-2.5" />
+                  <td className="px-2 py-2.5 text-right tabular-nums">
+                    {taxRows.reduce((s, r) => s + r.count, 0)}
+                  </td>
+                  <td className="px-2 py-2.5 text-right tabular-nums">
+                    {formatCAD(totalTaxCollected)}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )}
+        <p className="text-[11px] text-muted-foreground">
+          Tax counted on the date the invoice was issued. Remittance schedule
+          set by your CRA filing frequency (monthly, quarterly, or annual).
+        </p>
       </section>
 
       {/* IFTA entry point -------------------------------------------- */}

@@ -367,11 +367,28 @@ export default async function LoadDetailPage({
                 value={formatCurrency(enteredAcc, load.currency)}
               />
               <Field
-                label="Total billed (CAD)"
+                label="Subtotal (CAD)"
                 value={formatCAD(
                   load.total_billed_cad === null
                     ? null
                     : Number(load.total_billed_cad),
+                )}
+              />
+              {Number(load.tax_rate_pct ?? 0) > 0 ? (
+                <Field
+                  label={`Tax @ ${Number(load.tax_rate_pct).toFixed(load.tax_rate_pct % 1 === 0 ? 0 : 2)}%${load.tax_jurisdiction ? ` (${load.tax_jurisdiction})` : ""}`}
+                  value={formatCAD(Number(load.tax_amount_cad ?? 0))}
+                />
+              ) : (
+                <Field label="Tax" value="—" />
+              )}
+              <Field
+                label="Grand total (CAD)"
+                value={formatCAD(
+                  load.total_billed_cad === null
+                    ? null
+                    : Number(load.total_billed_cad) +
+                        Number(load.tax_amount_cad ?? 0),
                 )}
               />
               {load.currency !== "CAD" ? (
