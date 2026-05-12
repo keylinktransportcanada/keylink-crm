@@ -26,6 +26,7 @@ import { createClient } from "@/lib/supabase/server"
 
 import { DeleteLoadButton } from "./delete-button"
 import { StatusActions } from "./status-actions"
+import { TripDistancesCard } from "./trip-distances-card"
 
 type Status = (typeof LOAD_STATUS_VALUES)[number]
 
@@ -135,11 +136,26 @@ export default async function LoadDetailPage({
       .order("created_at", { ascending: false }),
   ])
 
-  const { data: documentRows } = await supabase
-    .from("documents")
-    .select("id, type, file_path, file_name, mime_type, size_bytes, uploaded_at")
-    .eq("load_id", id)
-    .order("uploaded_at", { ascending: false })
+  const [{ data: documentRows }, { data: distanceRows }] = await Promise.all([
+    supabase
+      .from("documents")
+      .select(
+        "id, type, file_path, file_name, mime_type, size_bytes, uploaded_at",
+      )
+      .eq("load_id", id)
+      .order("uploaded_at", { ascending: false }),
+    supabase
+      .from("trip_distances")
+      .select("id, jurisdiction, distance_km")
+      .eq("load_id", id)
+      .order("jurisdiction", { ascending: true }),
+  ])
+
+  const tripDistances = (distanceRows ?? []).map((d) => ({
+    id: d.id,
+    jurisdiction: d.jurisdiction,
+    distance_km: Number(d.distance_km ?? 0),
+  }))
 
   const documents = await Promise.all(
     (documentRows ?? []).map(async (d) => {
@@ -377,6 +393,15 @@ export default async function LoadDetailPage({
               </Grid>
             </Card>
           ) : null}
+
+          {/* Trip distances — IFTA per-jurisdiction kilometres */}
+          <Card title="Trip distances (IFTA)">
+            <TripDistancesCard
+              loadId={load.id}
+              distances={tripDistances}
+              canEdit={role === "admin" || role === "dispatcher" || role === "accounting"}
+            />
+          </Card>
 
           {/* Documents */}
           <Card title="Documents">
