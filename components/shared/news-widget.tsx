@@ -57,11 +57,11 @@ export function NewsWidget({ items }: { items: NewsItem[] }) {
                   rel="noopener noreferrer"
                   className="group flex items-start gap-3 py-3 transition-colors hover:bg-muted/30"
                 >
-                  <div className="flex flex-1 flex-col gap-1 leading-tight">
-                    <span className="text-sm font-medium text-foreground group-hover:underline">
+                  <div className="flex min-w-0 flex-1 flex-col gap-1 leading-tight">
+                    <span className="line-clamp-2 text-sm font-medium text-foreground group-hover:underline">
                       {item.title}
                     </span>
-                    <div className="flex items-center gap-2 text-[11px]">
+                    <div className="flex flex-wrap items-center gap-2 text-[10px]">
                       <span
                         className={`rounded-md px-1.5 py-0.5 font-semibold uppercase tracking-wider ${tone}`}
                       >

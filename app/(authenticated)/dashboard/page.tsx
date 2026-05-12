@@ -971,18 +971,22 @@ async function DispatchView({
           customers={customerRows ?? []}
           total={customersCount ?? 0}
         />
-        {showEmployees ? (
-          <EmployeesTile
-            roles={
-              (employeesAgg.data ?? []).map((p) => p.role) as Array<
-                CurrentProfile["role"]
-              >
-            }
-          />
-        ) : null}
+        {/* Right column stacks Active Employees on top and the news feed
+            below so the column matches the Customers card height instead
+            of leaving the lower half empty. */}
+        <div className="flex flex-col gap-4">
+          {showEmployees ? (
+            <EmployeesTile
+              roles={
+                (employeesAgg.data ?? []).map((p) => p.role) as Array<
+                  CurrentProfile["role"]
+                >
+              }
+            />
+          ) : null}
+          <NewsWidget items={newsItems.slice(0, 6)} />
+        </div>
       </div>
-
-      <NewsWidget items={newsItems} />
     </div>
   )
 }
