@@ -963,6 +963,18 @@ export function LoadForm({
           ) : null}
         </Section>
 
+        {/* Tax override — edit only. Lets accounting force a specific
+            GST/HST rate before the invoice is generated. Leave blank to let
+            the server auto-derive on save from destination + customer
+            tax_exempt flag. */}
+        {mode.kind === "edit" ? (
+          <TaxOverrideSection
+            form={form}
+            currency={currency}
+            enteredTotal={enteredTotal}
+          />
+        ) : null}
+
         {/* Cross-border ----------------------------------------------- */}
         <Section title="Cross-border">
           <FormField
@@ -1101,6 +1113,127 @@ export function LoadForm({
         </div>
       </form>
     </Form>
+  )
+}
+
+const TAX_PRESETS: Array<{ label: string; value: number | null }> = [
+  { label: "Auto", value: null },
+  { label: "0% — Zero-rated / exempt", value: 0 },
+  { label: "5% — GST", value: 5 },
+  { label: "13% — HST (ON)", value: 13 },
+  { label: "15% — HST (NB/NL/NS/PE)", value: 15 },
+]
+
+function TaxOverrideSection({
+  form,
+  currency,
+  enteredTotal,
+}: {
+  form: ReturnType<typeof useForm<LoadInput>>
+  currency: string
+  enteredTotal: number
+}) {
+  const value = form.watch("tax_rate_pct")
+  const hasOverride = typeof value === "number"
+  const taxAmount = hasOverride ? (enteredTotal * (value as number)) / 100 : 0
+
+  return (
+    <Section
+      title="Tax (accounting override)"
+      description="Force a specific GST/HST rate on this load. Leave on Auto to let the server derive it from destination + customer tax-exempt flag when the load is saved or the invoice is generated."
+    >
+      <div className="flex flex-wrap items-end gap-3">
+        <FormField
+          control={form.control}
+          name="tax_rate_pct"
+          render={({ field }) => (
+            <FormItem className="flex-1 min-w-[220px]">
+              <FormLabel>Rate</FormLabel>
+              <Select
+                value={field.value === null || field.value === undefined ? "_auto" : String(field.value)}
+                onValueChange={(v) => {
+                  if (v === "_auto" || v === null) {
+                    field.onChange(null)
+                  } else if (v === "_custom") {
+                    field.onChange(field.value ?? 0)
+                  } else {
+                    field.onChange(Number(v))
+                  }
+                }}
+              >
+                <FormControl>
+                  <SelectTrigger className="w-full">
+                    <SelectValue>
+                      {(v: string | null) => {
+                        if (!v || v === "_auto") return "Auto"
+                        const preset = TAX_PRESETS.find(
+                          (p) => p.value !== null && String(p.value) === v,
+                        )
+                        return preset?.label ?? `${v}% (custom)`
+                      }}
+                    </SelectValue>
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  {TAX_PRESETS.map((p) => (
+                    <SelectItem
+                      key={p.label}
+                      value={p.value === null ? "_auto" : String(p.value)}
+                    >
+                      {p.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        {hasOverride ? (
+          <FormField
+            control={form.control}
+            name="tax_rate_pct"
+            render={({ field }) => (
+              <FormItem className="w-[140px]">
+                <FormLabel>Custom %</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={25}
+                    step="0.01"
+                    value={field.value ?? ""}
+                    onChange={(e) =>
+                      field.onChange(
+                        e.target.value === ""
+                          ? null
+                          : Number(e.target.value),
+                      )
+                    }
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        ) : null}
+      </div>
+      {hasOverride && enteredTotal > 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Tax @ {value}% ={" "}
+          <span className="font-medium text-foreground">
+            {currency} {taxAmount.toFixed(2)}
+          </span>{" "}
+          on a {currency} {enteredTotal.toFixed(2)} subtotal.
+        </p>
+      ) : !hasOverride ? (
+        <p className="text-sm text-muted-foreground">
+          Rate auto-derives from destination on save: HST 13% (ON), HST 15%
+          (NB/NL/NS/PE), GST 5% (other CA), zero-rated for cross-border or
+          tax-exempt customers.
+        </p>
+      ) : null}
+    </Section>
   )
 }
 

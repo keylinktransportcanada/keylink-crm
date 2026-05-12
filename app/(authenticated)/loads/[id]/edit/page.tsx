@@ -140,6 +140,7 @@ export default async function EditLoadPage({
     internal_notes: load.internal_notes ?? "",
 
     status: load.status,
+    tax_rate_pct: load.tax_rate_pct === null ? null : Number(load.tax_rate_pct),
   }
 
   return (

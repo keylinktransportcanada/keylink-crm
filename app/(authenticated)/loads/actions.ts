@@ -42,21 +42,32 @@ async function buildRow(input: LoadInput, actorId: string) {
       ? null
       : (rateCad ?? 0) + (fuelCad ?? 0) + (accCad ?? 0)
 
-  // Auto-derive tax from destination + customer exemption. Look up the
-  // customer's tax_exempt flag fresh so a stale flag in the client form
-  // can't bypass it.
-  const supabase = await createClient()
-  const { data: customer } = await supabase
-    .from("customers")
-    .select("tax_exempt")
-    .eq("id", input.customer_id)
-    .maybeSingle()
-  const tax = computeTax({
-    destinationCountry: input.destination_country || "CA",
-    destinationProvince: input.destination_province || null,
-    customerExempt: customer?.tax_exempt ?? false,
-  })
-  const taxAmount = totalCad === null ? 0 : computeTaxAmount(totalCad, tax.rate_pct)
+  // Tax: if the client passed an explicit override (edit form), use it
+  // verbatim and label the jurisdiction as MANUAL. Otherwise auto-derive
+  // from destination + customer's current tax_exempt flag.
+  let taxRatePct: number
+  let taxJurisdiction: string | null
+  if (typeof input.tax_rate_pct === "number") {
+    taxRatePct = input.tax_rate_pct
+    taxJurisdiction =
+      taxRatePct === 0 ? null : input.destination_province || "MANUAL"
+  } else {
+    const supabase = await createClient()
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("tax_exempt")
+      .eq("id", input.customer_id)
+      .maybeSingle()
+    const tax = computeTax({
+      destinationCountry: input.destination_country || "CA",
+      destinationProvince: input.destination_province || null,
+      customerExempt: customer?.tax_exempt ?? false,
+    })
+    taxRatePct = tax.rate_pct
+    taxJurisdiction = tax.jurisdiction
+  }
+  const taxAmount =
+    totalCad === null ? 0 : computeTaxAmount(totalCad, taxRatePct)
 
   return {
     customer_id: input.customer_id,
@@ -101,9 +112,9 @@ async function buildRow(input: LoadInput, actorId: string) {
     pars_pass_number: input.pars_pass_number || null,
     aci_aces_number: input.aci_aces_number || null,
 
-    tax_rate_pct: tax.rate_pct,
+    tax_rate_pct: taxRatePct,
     tax_amount_cad: taxAmount,
-    tax_jurisdiction: tax.jurisdiction,
+    tax_jurisdiction: taxJurisdiction,
 
     notes: input.notes || null,
     internal_notes: input.internal_notes || null,

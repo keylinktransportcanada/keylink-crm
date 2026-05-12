@@ -122,6 +122,19 @@ export const loadSchema = z.object({
   // hit "Mark paid" by accident); the server action records the change in
   // load_status_events so the timeline still reflects it.
   status: z.enum(LOAD_STATUS_VALUES).optional(),
+
+  // Edit-only manual tax override. When set, the action stores this rate
+  // (and the recomputed amount) verbatim instead of auto-deriving from
+  // destination + customer exemption. Lets accounting force-set HST/GST on
+  // a load before generating its invoice (e.g. tax-exempt customer turned
+  // out to be wrong, or a province override is needed). null/undefined =
+  // auto-derive on save.
+  tax_rate_pct: z
+    .number()
+    .min(0, { message: "Tax rate can't be negative." })
+    .max(25, { message: "Tax rate above 25% is suspicious." })
+    .nullable()
+    .optional(),
 })
 
 export type LoadInput = z.infer<typeof loadSchema>
