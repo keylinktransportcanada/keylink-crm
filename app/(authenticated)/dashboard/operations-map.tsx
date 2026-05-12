@@ -108,19 +108,7 @@ const CATEGORY_META: Record<
   },
 }
 
-const STATUS_TONE: Record<LoadStatus, string> = {
-  draft: "bg-slate-500/15 text-slate-300",
-  assigned: "bg-blue-500/20 text-blue-200",
-  dispatched: "bg-blue-500/20 text-blue-200",
-  at_pickup: "bg-amber-500/20 text-amber-200",
-  loaded: "bg-amber-500/20 text-amber-200",
-  in_transit: "bg-sky-500/20 text-sky-200",
-  at_delivery: "bg-amber-500/20 text-amber-200",
-  delivered: "bg-emerald-500/20 text-emerald-200",
-  invoiced: "bg-emerald-500/20 text-emerald-200",
-  paid: "bg-emerald-600/30 text-emerald-100",
-  cancelled: "bg-red-500/20 text-red-200",
-}
+import { LOAD_STATUS_TONE_GLASS as STATUS_TONE } from "@/lib/load-status-colors"
 
 const W = 800
 const H = 460

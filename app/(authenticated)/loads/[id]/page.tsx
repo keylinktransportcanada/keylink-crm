@@ -30,19 +30,7 @@ import { TripDistancesCard } from "./trip-distances-card"
 
 type Status = (typeof LOAD_STATUS_VALUES)[number]
 
-const STATUS_TONE: Record<Status, string> = {
-  draft: "bg-muted text-muted-foreground",
-  assigned: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
-  dispatched: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
-  at_pickup: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  loaded: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  in_transit: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300",
-  at_delivery: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  delivered: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  invoiced: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  paid: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
-  cancelled: "bg-red-500/15 text-red-700 dark:text-red-300",
-}
+import { LOAD_STATUS_TONE as STATUS_TONE } from "@/lib/load-status-colors"
 
 const formatCAD = (value: number | null) =>
   value === null

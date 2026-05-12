@@ -50,6 +50,10 @@ import {
   PreviewCardTrigger,
 } from "@/components/ui/preview-card"
 import {
+  LOAD_STATUS_TONE as STATUS_TONE,
+  LOAD_STATUS_TONE_GLASS as STATUS_TONE_GLASS,
+} from "@/lib/load-status-colors"
+import {
   Table,
   TableBody,
   TableCell,
@@ -109,36 +113,6 @@ export type LoadListRow = {
   reference_number: string | null
   po_number: string | null
   documents?: LoadDocPreview[]
-}
-
-const STATUS_TONE: Record<LoadListRow["status"], string> = {
-  draft: "bg-muted text-muted-foreground",
-  assigned: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
-  dispatched: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
-  at_pickup: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  loaded: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  in_transit: "bg-indigo-500/15 text-indigo-700 dark:text-indigo-300",
-  at_delivery: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  delivered: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  invoiced: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  paid: "bg-emerald-500/15 text-emerald-800 dark:text-emerald-200",
-  cancelled: "bg-red-500/15 text-red-700 dark:text-red-300",
-}
-
-// Same statuses re-tinted for the dark liquid-glass preview surface where
-// the light-context shades disappear into the navy backdrop.
-const STATUS_TONE_GLASS: Record<LoadListRow["status"], string> = {
-  draft: "bg-white/10 text-brand-cloud/80",
-  assigned: "bg-blue-500/25 text-blue-100",
-  dispatched: "bg-blue-500/25 text-blue-100",
-  at_pickup: "bg-amber-500/25 text-amber-100",
-  loaded: "bg-amber-500/25 text-amber-100",
-  in_transit: "bg-indigo-500/25 text-indigo-100",
-  at_delivery: "bg-amber-500/25 text-amber-100",
-  delivered: "bg-emerald-500/25 text-emerald-100",
-  invoiced: "bg-emerald-500/25 text-emerald-100",
-  paid: "bg-emerald-500/35 text-white",
-  cancelled: "bg-red-500/30 text-red-100",
 }
 
 // "Active loads" = everything except cancelled. Paid loads stay visible so

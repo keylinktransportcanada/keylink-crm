@@ -39,19 +39,7 @@ const STATUS_ICON: Record<LoadStatus, LucideIcon> = {
   cancelled: XCircle,
 }
 
-const STATUS_TONE: Record<LoadStatus, string> = {
-  draft: "bg-muted text-muted-foreground",
-  assigned: "bg-blue-100 text-blue-700",
-  dispatched: "bg-blue-100 text-blue-700",
-  at_pickup: "bg-amber-100 text-amber-700",
-  loaded: "bg-amber-100 text-amber-700",
-  in_transit: "bg-indigo-100 text-indigo-700",
-  at_delivery: "bg-amber-100 text-amber-700",
-  delivered: "bg-emerald-100 text-emerald-700",
-  invoiced: "bg-emerald-100 text-emerald-700",
-  paid: "bg-emerald-200 text-emerald-800",
-  cancelled: "bg-red-100 text-red-700",
-}
+import { LOAD_STATUS_TONE as STATUS_TONE } from "@/lib/load-status-colors"
 
 function timeAgo(iso: string): string {
   const ms = Date.now() - new Date(iso).getTime()
