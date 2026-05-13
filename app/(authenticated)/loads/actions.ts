@@ -14,6 +14,7 @@ import {
   buildLoadStatusUpdateEmail,
   shouldNotifyCustomer,
 } from "@/lib/emails/load-status-update"
+import { buildInvoiceReadyEmail } from "@/lib/emails/invoice-ready"
 import { getUsdToCadRate } from "@/lib/fx"
 import {
   loadSchema,
@@ -184,6 +185,80 @@ async function notifyCustomerStatusChange(opts: {
     })
   } catch {
     // Swallow — never block the status transition on a failed email.
+  }
+}
+
+// Invoice-ready email — sent the moment a load flips to `invoiced`.
+// Summary email only (no PDF) for v1; customers reply for the official
+// document if they need one. Best-effort, never blocks the transition.
+async function notifyCustomerInvoiced(opts: {
+  loadId: string
+}): Promise<void> {
+  try {
+    const admin = createAdminClient()
+    const { data: load } = await admin
+      .from("loads")
+      .select(
+        `id, load_number, customer_id, tracking_slug,
+         total_billed_cad, tax_amount_cad, tax_rate_pct, tax_jurisdiction,
+         rate_cad, fuel_surcharge_cad, accessorial_charges_cad,
+         reference_number, po_number`,
+      )
+      .eq("id", opts.loadId)
+      .maybeSingle()
+    if (!load) return
+
+    let email: string | null = null
+    let customerName: string | null = null
+    let contactName: string | null = null
+    let paymentTermsDays = 30
+    if (load.customer_id) {
+      const { data: c } = await admin
+        .from("customers")
+        .select("name, email, contact_name, payment_terms_days")
+        .eq("id", load.customer_id)
+        .maybeSingle()
+      email = c?.email ?? null
+      customerName = c?.name ?? null
+      contactName = c?.contact_name ?? null
+      paymentTermsDays = c?.payment_terms_days ?? 30
+    }
+    if (!email) return
+
+    // Subtotal = rate + fuel + accessorials (before tax). total_billed_cad
+    // is the pre-tax total in this schema; tax is tracked separately.
+    const toNum = (v: number | string | null) =>
+      v === null ? 0 : Number(v)
+    const subtotal =
+      toNum(load.rate_cad) +
+      toNum(load.fuel_surcharge_cad) +
+      toNum(load.accessorial_charges_cad)
+    const tax = toNum(load.tax_amount_cad)
+    const total = subtotal + tax
+
+    const siteUrl = await resolveSiteUrl()
+    const trackingUrl = `${siteUrl}/track/${load.tracking_slug}`
+
+    const { subject, html, text } = buildInvoiceReadyEmail({
+      customerContactName: contactName,
+      customerName,
+      loadNumber: load.load_number,
+      referenceNumber: load.reference_number,
+      poNumber: load.po_number,
+      subtotalCad: subtotal,
+      taxAmountCad: tax,
+      taxRatePct:
+        load.tax_rate_pct === null ? null : Number(load.tax_rate_pct),
+      taxJurisdiction: load.tax_jurisdiction,
+      totalCad: total,
+      paymentTermsDays,
+      trackingUrl,
+      issueDateISO: new Date().toISOString(),
+    })
+
+    await sendEmail({ to: email, subject, html, text })
+  } catch {
+    // Swallow — never block the transition on a failed email.
   }
 }
 
@@ -401,6 +476,9 @@ export async function updateLoad(
       loadId: parsed.data.id,
       status: overrideStatus,
     })
+    if (overrideStatus === "invoiced") {
+      await notifyCustomerInvoiced({ loadId: parsed.data.id })
+    }
   }
 
   if (driverChanged && parsed.data.driver_id) {
@@ -471,6 +549,11 @@ export async function transitionLoadStatus(
     loadId: parsed.data.id,
     status: parsed.data.status,
   })
+
+  // Invoice email when accounting flips a load to invoiced.
+  if (parsed.data.status === "invoiced") {
+    await notifyCustomerInvoiced({ loadId: parsed.data.id })
+  }
 
   revalidatePath("/loads")
   revalidatePath(`/loads/${parsed.data.id}`)
