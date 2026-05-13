@@ -91,35 +91,35 @@ export function InvoicePreviewDialog({
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent
           showCloseButton={false}
-          className="flex h-[85vh] w-[min(900px,95vw)] max-w-[95vw] flex-col gap-0 p-0 sm:max-w-[95vw]"
+          className="flex h-[85vh] w-[min(900px,95vw)] max-w-[95vw] flex-col gap-0 overflow-hidden border-brand-navy/20 bg-brand-cloud p-0 sm:max-w-[95vw]"
         >
-          <DialogHeader className="flex flex-row items-start justify-between gap-4 border-b border-border px-5 py-4">
+          <DialogHeader className="flex flex-row items-start justify-between gap-4 border-b border-brand-navy/15 bg-white/60 px-5 py-4">
             <div className="flex flex-col gap-1">
-              <DialogTitle className="font-mono text-base font-semibold">
+              <DialogTitle className="font-mono text-base font-semibold text-brand-navy">
                 {loadNumber}
                 {customerName ? (
-                  <span className="ml-2 font-sans text-sm font-normal text-muted-foreground">
+                  <span className="ml-2 font-sans text-sm font-normal text-brand-slate">
                     · {customerName}
                   </span>
                 ) : null}
               </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground">
+              <DialogDescription className="text-xs text-brand-slate">
                 {deliveredAtLabel} · {amountLabel}
               </DialogDescription>
             </div>
             <div className="flex shrink-0 items-center gap-2">
               <a
                 href={`/loads/${loadId}/edit`}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted"
+                className="inline-flex items-center gap-2 rounded-md bg-brand-gold px-4 py-2 text-sm font-semibold text-brand-navy shadow-[0_1px_2px_rgba(18,41,74,0.08),0_4px_12px_-4px_rgba(240,168,32,0.4)] transition-colors hover:bg-brand-gold-light"
               >
-                <Pencil className="size-3.5" />
+                <Pencil className="size-4" />
                 Edit load
               </a>
               <a
                 href={src}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted"
+                className="inline-flex items-center gap-1.5 rounded-md border border-brand-navy/20 bg-white px-2.5 py-1.5 text-xs font-medium text-brand-navy hover:bg-brand-cloud"
               >
                 <Download className="size-3.5" />
                 Open / Download
@@ -136,7 +136,7 @@ export function InvoicePreviewDialog({
             </div>
           </DialogHeader>
 
-          <div className="flex-1 overflow-hidden bg-muted/30">
+          <div className="flex-1 overflow-hidden bg-brand-cloud">
             {open ? (
               <iframe
                 src={src}
@@ -150,10 +150,10 @@ export function InvoicePreviewDialog({
               No toast / router.refresh import — uses a full reload on
               success so the queue row drops without any client-side
               navigation hooks. */}
-          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border bg-card px-5 py-3">
+          <div className="flex flex-wrap items-center justify-end gap-3 border-t border-brand-navy/15 bg-white/60 px-5 py-4">
             {phase === "view" ? (
               <>
-                <p className="mr-auto text-xs text-muted-foreground">
+                <p className="mr-auto text-xs text-brand-slate">
                   Review the invoice above. When ready, mark it invoiced —
                   this flips the load&apos;s status and emails the customer.
                 </p>
@@ -165,21 +165,21 @@ export function InvoicePreviewDialog({
                 >
                   Cancel
                 </Button>
-                <Button
+                <button
                   type="button"
-                  size="sm"
                   onClick={() => setPhase("confirming")}
+                  className="inline-flex items-center gap-2 rounded-md bg-brand-gold px-5 py-2.5 text-sm font-semibold text-brand-navy shadow-[0_1px_2px_rgba(18,41,74,0.08),0_6px_16px_-4px_rgba(240,168,32,0.5)] transition-colors hover:bg-brand-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2"
                 >
                   <CheckCircle2 className="size-4" />
                   Mark invoiced
-                </Button>
+                </button>
               </>
             ) : null}
 
             {phase === "confirming" ? (
               <>
-                <p className="mr-auto text-xs">
-                  Confirm: mark <span className="font-mono">{loadNumber}</span>{" "}
+                <p className="mr-auto text-xs text-brand-navy">
+                  Confirm: mark <span className="font-mono font-semibold">{loadNumber}</span>{" "}
                   invoiced and email the customer?
                 </p>
                 <Button
@@ -190,43 +190,51 @@ export function InvoicePreviewDialog({
                 >
                   Back
                 </Button>
-                <Button type="button" size="sm" onClick={submit}>
+                <button
+                  type="button"
+                  onClick={submit}
+                  className="inline-flex items-center gap-2 rounded-md bg-brand-gold px-5 py-2.5 text-sm font-semibold text-brand-navy shadow-[0_1px_2px_rgba(18,41,74,0.08),0_6px_16px_-4px_rgba(240,168,32,0.5)] transition-colors hover:bg-brand-gold-light focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold focus-visible:ring-offset-2"
+                >
                   <CheckCircle2 className="size-4" />
                   Confirm
-                </Button>
+                </button>
               </>
             ) : null}
 
             {phase === "submitting" ? (
               <>
-                <p className="mr-auto text-xs text-muted-foreground">
+                <p className="mr-auto text-xs text-brand-slate">
                   Updating status and sending email…
                 </p>
-                <Button type="button" size="sm" disabled>
+                <button
+                  type="button"
+                  disabled
+                  className="inline-flex items-center gap-2 rounded-md bg-brand-gold/70 px-5 py-2.5 text-sm font-semibold text-brand-navy"
+                >
                   <Loader2 className="size-4 animate-spin" />
                   Working…
-                </Button>
+                </button>
               </>
             ) : null}
 
             {phase === "done" ? (
               <>
-                <p className="mr-auto text-xs text-emerald-700">
-                  <CheckCircle2 className="mr-1 inline size-3.5" />
+                <p className="mr-auto text-sm text-emerald-700">
+                  <CheckCircle2 className="mr-1 inline size-4" />
                   Marked invoiced
                   {emailSent ? " — email sent to customer." : "."}
                 </p>
-                <Button
+                <button
                   type="button"
-                  size="sm"
                   onClick={() => {
                     // Full reload so the queue refreshes without needing
                     // useRouter (kept this component dep-light).
                     window.location.reload()
                   }}
+                  className="inline-flex items-center gap-2 rounded-md bg-brand-gold px-5 py-2.5 text-sm font-semibold text-brand-navy shadow-[0_1px_2px_rgba(18,41,74,0.08),0_6px_16px_-4px_rgba(240,168,32,0.5)] transition-colors hover:bg-brand-gold-light"
                 >
                   Done
-                </Button>
+                </button>
               </>
             ) : null}
 
@@ -243,9 +251,13 @@ export function InvoicePreviewDialog({
                 >
                   Back
                 </Button>
-                <Button type="button" size="sm" onClick={submit}>
+                <button
+                  type="button"
+                  onClick={submit}
+                  className="inline-flex items-center gap-2 rounded-md bg-brand-gold px-5 py-2.5 text-sm font-semibold text-brand-navy shadow-[0_1px_2px_rgba(18,41,74,0.08),0_6px_16px_-4px_rgba(240,168,32,0.5)] transition-colors hover:bg-brand-gold-light"
+                >
                   Retry
-                </Button>
+                </button>
               </>
             ) : null}
           </div>
