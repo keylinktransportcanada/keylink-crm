@@ -14,6 +14,8 @@ import { requireRole } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/server"
 import { cn } from "@/lib/utils"
 
+import { InvoicePreviewDialog } from "./invoice-preview-dialog"
+
 const formatCAD = (value: number | null) =>
   value === null
     ? "—"
@@ -373,47 +375,46 @@ export default async function AccountingPage({
           <ul className="flex flex-col divide-y divide-border">
             {(deliveredLoads ?? []).map((l) => {
               const c = customerById.get(l.customer_id)
+              const amount = formatCAD2(
+                l.total_billed_cad === null
+                  ? null
+                  : Number(l.total_billed_cad),
+              )
+              const deliveredLabel = `delivered ${formatDate(l.delivery_date)}`
               return (
-                // The row uses a "stretched link" pattern — an absolutely
-                // positioned Link covers the whole row so clicks anywhere
-                // open the load detail. The action buttons sit at z-10 so
-                // they keep their own click handlers.
-                <li key={l.id} className="group relative">
-                  <Link
-                    href={`/loads/${l.id}`}
-                    aria-label={`Open ${l.load_number}`}
-                    className="absolute inset-0 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:bg-muted/40"
-                  />
-                  <div className="relative flex flex-wrap items-center gap-3 py-2.5 px-1">
-                    <span className="font-mono text-sm font-medium">
-                      {l.load_number}
-                    </span>
-                    <span className="text-sm">{c?.name ?? "—"}</span>
-                    <span className="text-xs text-muted-foreground">
-                      delivered {formatDate(l.delivery_date)}
-                    </span>
-                    <span className="ml-auto text-sm font-medium tabular-nums">
-                      {formatCAD2(
-                        l.total_billed_cad === null
-                          ? null
-                          : Number(l.total_billed_cad),
-                      )}
-                    </span>
-                    <div className="relative z-10 flex items-center gap-2">
-                      <a
-                        href={`/loads/${l.id}/invoice`}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                // The whole row is a button that opens the invoice
+                // preview dialog. The PDF inside the dialog has its own
+                // "Open / Download" link for users who want to save it.
+                <li key={l.id}>
+                  <InvoicePreviewDialog
+                    loadId={l.id}
+                    loadNumber={l.load_number}
+                    customerName={c?.name ?? null}
+                    amountLabel={amount}
+                    deliveredAtLabel={deliveredLabel}
+                  >
+                    <div className="flex flex-wrap items-center gap-3 px-2 py-2.5">
+                      <span className="font-mono text-sm font-medium">
+                        {l.load_number}
+                      </span>
+                      <span className="text-sm">{c?.name ?? "—"}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {deliveredLabel}
+                      </span>
+                      <span className="ml-auto text-sm font-medium tabular-nums">
+                        {amount}
+                      </span>
+                      <span
                         className={buttonVariants({
                           size: "sm",
                           variant: "outline",
                         })}
                       >
                         <FileText />
-                        Generate invoice
-                      </a>
+                        Preview invoice
+                      </span>
                     </div>
-                  </div>
+                  </InvoicePreviewDialog>
                 </li>
               )
             })}
