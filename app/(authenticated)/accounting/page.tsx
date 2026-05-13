@@ -14,6 +14,8 @@ import { requireRole } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/server"
 import { cn } from "@/lib/utils"
 
+import { MarkInvoicedButton } from "./mark-invoiced-button"
+
 const formatCAD = (value: number | null) =>
   value === null
     ? "—"
@@ -59,9 +61,18 @@ const BUCKET_TONE: Record<AgingBucket, string> = {
   "90+": "bg-red-100 text-red-900",
 }
 
-export default async function AccountingPage() {
+export default async function AccountingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string }>
+}) {
   await requireRole(["admin", "accounting"])
   const supabase = await createClient()
+
+  const { sort } = await searchParams
+  // Default newest-first — most operators want to see what was delivered
+  // today / yesterday at the top, with older deliveries below.
+  const invoiceQueueDir: "asc" | "desc" = sort === "asc" ? "asc" : "desc"
 
   // ---------------------------------------------------------------------
   // Pull all invoiced + paid loads in one shot, then resolve invoice/paid
@@ -79,7 +90,7 @@ export default async function AccountingPage() {
         "id, load_number, customer_id, total_billed_cad, delivery_date, currency, fx_rate_to_cad, rate_cad",
       )
       .eq("status", "delivered")
-      .order("delivery_date", { ascending: true }),
+      .order("delivery_date", { ascending: invoiceQueueDir === "asc" }),
     supabase
       .from("loads")
       .select(
@@ -309,7 +320,7 @@ export default async function AccountingPage() {
 
       {/* Invoice queue ----------------------------------------------- */}
       <section className="flex flex-col gap-3 rounded-xl border border-border/70 bg-card p-5 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)]">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Receipt className="size-4 text-brand-gold" />
             <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
@@ -319,9 +330,41 @@ export default async function AccountingPage() {
               {(deliveredLoads ?? []).length}
             </span>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Delivered loads ready to invoice.
-          </p>
+          <div className="flex items-center gap-3">
+            <p className="hidden text-xs text-muted-foreground sm:block">
+              Delivered loads ready to invoice.
+            </p>
+            {/* Sort toggle — uses URL search param so the order survives
+                refresh and can be linked to. */}
+            <div className="inline-flex overflow-hidden rounded-md border border-border text-xs">
+              <Link
+                href="/accounting?sort=desc"
+                scroll={false}
+                className={cn(
+                  "px-2.5 py-1 transition-colors",
+                  invoiceQueueDir === "desc"
+                    ? "bg-brand-navy text-white"
+                    : "text-muted-foreground hover:bg-muted",
+                )}
+                aria-pressed={invoiceQueueDir === "desc"}
+              >
+                Newest
+              </Link>
+              <Link
+                href="/accounting?sort=asc"
+                scroll={false}
+                className={cn(
+                  "px-2.5 py-1 transition-colors border-l border-border",
+                  invoiceQueueDir === "asc"
+                    ? "bg-brand-navy text-white"
+                    : "text-muted-foreground hover:bg-muted",
+                )}
+                aria-pressed={invoiceQueueDir === "asc"}
+              >
+                Oldest
+              </Link>
+            </div>
+          </div>
         </div>
         {(deliveredLoads ?? []).length === 0 ? (
           <p className="rounded-md border border-dashed border-border bg-muted/20 p-6 text-center text-sm text-muted-foreground">
@@ -332,14 +375,20 @@ export default async function AccountingPage() {
             {(deliveredLoads ?? []).map((l) => {
               const c = customerById.get(l.customer_id)
               return (
-                <li key={l.id}>
-                  <div className="flex flex-wrap items-center gap-3 py-2.5">
-                    <Link
-                      href={`/loads/${l.id}`}
-                      className="font-mono text-sm font-medium hover:underline"
-                    >
+                // The row uses a "stretched link" pattern — an absolutely
+                // positioned Link covers the whole row so clicks anywhere
+                // open the load detail. The action buttons sit at z-10 so
+                // they keep their own click handlers.
+                <li key={l.id} className="group relative">
+                  <Link
+                    href={`/loads/${l.id}`}
+                    aria-label={`Open ${l.load_number}`}
+                    className="absolute inset-0 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring group-hover:bg-muted/40"
+                  />
+                  <div className="relative flex flex-wrap items-center gap-3 py-2.5 px-1">
+                    <span className="font-mono text-sm font-medium">
                       {l.load_number}
-                    </Link>
+                    </span>
                     <span className="text-sm">{c?.name ?? "—"}</span>
                     <span className="text-xs text-muted-foreground">
                       delivered {formatDate(l.delivery_date)}
@@ -351,18 +400,25 @@ export default async function AccountingPage() {
                           : Number(l.total_billed_cad),
                       )}
                     </span>
-                    <a
-                      href={`/loads/${l.id}/invoice`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={buttonVariants({
-                        size: "sm",
-                        variant: "outline",
-                      })}
-                    >
-                      <FileText />
-                      Generate invoice
-                    </a>
+                    <div className="relative z-10 flex items-center gap-2">
+                      <MarkInvoicedButton
+                        loadId={l.id}
+                        loadNumber={l.load_number}
+                      />
+                      <a
+                        href={`/loads/${l.id}/invoice`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className={buttonVariants({
+                          size: "sm",
+                          variant: "outline",
+                        })}
+                      >
+                        <FileText />
+                        PDF
+                      </a>
+                    </div>
                   </div>
                 </li>
               )
