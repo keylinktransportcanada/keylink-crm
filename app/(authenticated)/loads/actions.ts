@@ -1,9 +1,15 @@
 "use server"
 
+import { headers } from "next/headers"
 import { revalidatePath } from "next/cache"
 import { redirect } from "next/navigation"
 
 import { requireRole } from "@/lib/auth"
+import { sendEmail } from "@/lib/email"
+import {
+  buildLoadAssignedEmail,
+  type LoadAssignedEmailInput,
+} from "@/lib/emails/load-assigned"
 import { getUsdToCadRate } from "@/lib/fx"
 import {
   loadSchema,
@@ -13,8 +19,98 @@ import {
   type TransitionStatusInput,
   type UpdateLoadInput,
 } from "@/lib/schemas/loads"
+import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
 import { computeTax, computeTaxAmount } from "@/lib/tax"
+
+// Same env-then-header fallback used by other server actions so emailed
+// links stay correct in any deploy context.
+async function resolveSiteUrl(): Promise<string> {
+  const fromEnv = process.env.NEXT_PUBLIC_SITE_URL
+  if (fromEnv) return fromEnv.replace(/\/$/, "")
+  const h = await headers()
+  const proto = h.get("x-forwarded-proto") ?? "https"
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? ""
+  return host ? `${proto}://${host}` : ""
+}
+
+// Best-effort assignment notification — never blocks the action result.
+// Looks up the driver's email + customer name + assembles the email
+// payload, then fires through Resend. Failures are swallowed; the
+// assignment itself has already committed at this point.
+async function notifyDriverAssigned(opts: {
+  loadId: string
+  driverId: string
+}): Promise<void> {
+  try {
+    const admin = createAdminClient()
+
+    const { data: load } = await admin
+      .from("loads")
+      .select(
+        `id, load_number, customer_id,
+         origin_company, origin_city, origin_province,
+         destination_company, destination_city, destination_province,
+         pickup_date, delivery_date,
+         equipment_required, is_cross_border, reference_number`,
+      )
+      .eq("id", opts.loadId)
+      .maybeSingle()
+    if (!load) return
+
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", opts.driverId)
+      .maybeSingle()
+
+    const { data: userList } = await admin.auth.admin.listUsers()
+    const authUser = userList?.users.find((u) => u.id === opts.driverId)
+    const driverEmail = authUser?.email
+    if (!driverEmail) return
+
+    let customerName: string | null = null
+    if (load.customer_id) {
+      const { data: c } = await admin
+        .from("customers")
+        .select("name")
+        .eq("id", load.customer_id)
+        .maybeSingle()
+      customerName = c?.name ?? null
+    }
+
+    const siteUrl = await resolveSiteUrl()
+    const payload: LoadAssignedEmailInput = {
+      driverFullName: profile?.full_name ?? null,
+      loadNumber: load.load_number,
+      customerName,
+      origin: {
+        city: load.origin_city,
+        province: load.origin_province,
+        company: load.origin_company,
+      },
+      destination: {
+        city: load.destination_city,
+        province: load.destination_province,
+        company: load.destination_company,
+      },
+      pickupDate: load.pickup_date,
+      deliveryDate: load.delivery_date,
+      equipment:
+        load.equipment_required && load.equipment_required !== "none"
+          ? load.equipment_required.replace(/_/g, " ")
+          : null,
+      isCrossBorder: Boolean(load.is_cross_border),
+      referenceNumber: load.reference_number,
+      loadUrl: `${siteUrl}/loads/${load.id}`,
+    }
+
+    const { subject, html, text } = buildLoadAssignedEmail(payload)
+    await sendEmail({ to: driverEmail, subject, html, text })
+  } catch {
+    // Swallow — never block assignment on email failure.
+  }
+}
 
 type FieldErrors = Partial<Record<string, string[]>>
 type CreateResult = { ok: true; id: string } | { error: FieldErrors }
@@ -156,6 +252,14 @@ export async function createLoad(input: LoadInput): Promise<CreateResult> {
     created_by: me.id,
   })
 
+  // Notify the driver if the load was created already assigned to them.
+  if (parsed.data.driver_id) {
+    await notifyDriverAssigned({
+      loadId: inserted.id,
+      driverId: parsed.data.driver_id,
+    })
+  }
+
   revalidatePath("/loads")
   revalidatePath("/dashboard")
   return { ok: true, id: inserted.id }
@@ -178,11 +282,12 @@ export async function updateLoad(
 
   const supabase = await createClient()
 
-  // Look up the existing status so we can detect a manual override and emit a
-  // timeline event when it changes.
+  // Look up the existing status + driver so we can (a) detect a manual
+  // status override and emit a timeline event, and (b) fire an assignment
+  // email only when driver_id actually changes (not on every edit).
   const { data: prior } = await supabase
     .from("loads")
-    .select("status")
+    .select("status, driver_id")
     .eq("id", parsed.data.id)
     .maybeSingle()
 
@@ -190,6 +295,10 @@ export async function updateLoad(
     parsed.data.status && prior && parsed.data.status !== prior.status
       ? parsed.data.status
       : null
+
+  const driverChanged =
+    !!parsed.data.driver_id &&
+    parsed.data.driver_id !== (prior?.driver_id ?? null)
 
   const updateRow = overrideStatus
     ? { ...updateRowBase, status: overrideStatus }
@@ -210,6 +319,13 @@ export async function updateLoad(
       status: overrideStatus,
       location_note: "Status manually corrected via edit form",
       created_by: me.id,
+    })
+  }
+
+  if (driverChanged && parsed.data.driver_id) {
+    await notifyDriverAssigned({
+      loadId: parsed.data.id,
+      driverId: parsed.data.driver_id,
     })
   }
 
