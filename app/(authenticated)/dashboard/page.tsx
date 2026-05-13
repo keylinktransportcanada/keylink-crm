@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/preview-card"
 import { NewsWidget } from "@/components/shared/news-widget"
 import { ROLE_META } from "@/components/shared/role-badge"
+import { SendDigestButton } from "@/components/shared/send-digest-button"
 import { requireRole, type CurrentProfile } from "@/lib/auth"
 import {
   daysBetween,
@@ -202,7 +203,10 @@ export default async function DashboardPage() {
       </header>
 
       {profile.role === "admin" || profile.role === "dispatcher" ? (
-        <DispatchView showEmployees={profile.role === "admin"} />
+        <DispatchView
+          showEmployees={profile.role === "admin"}
+          isAdmin={profile.role === "admin"}
+        />
       ) : profile.role === "accounting" ? (
         <AccountingView />
       ) : (
@@ -214,8 +218,10 @@ export default async function DashboardPage() {
 
 async function DispatchView({
   showEmployees,
+  isAdmin,
 }: {
   showEmployees: boolean
+  isAdmin: boolean
 }) {
   const supabase = await createClient()
   const today = todayInToronto()
@@ -835,6 +841,7 @@ async function DispatchView({
             items={topExpiryAlerts}
             totalCount={expiryAlerts.length}
             compact
+            showDigestButton={isAdmin}
           />
         ) : (
           <section className="flex h-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-muted/20 p-6 text-center">
@@ -2214,6 +2221,7 @@ function ExpiryAlertsCard({
   items,
   totalCount,
   compact = false,
+  showDigestButton = false,
 }: {
   items: Array<{
     id: string
@@ -2227,6 +2235,7 @@ function ExpiryAlertsCard({
   }>
   totalCount: number
   compact?: boolean
+  showDigestButton?: boolean
 }) {
   const ENTITY_TONE: Record<string, string> = {
     truck: "bg-blue-500/15 text-blue-700",
@@ -2258,12 +2267,15 @@ function ExpiryAlertsCard({
               roadside.
             </p>
           </div>
-          <Link
-            href="/compliance"
-            className="shrink-0 rounded-md border border-amber-300/60 bg-white/70 px-2.5 py-1 text-[11px] font-medium text-amber-900 transition-colors hover:bg-white"
-          >
-            View all
-          </Link>
+          <div className="flex shrink-0 items-center gap-1.5">
+            {showDigestButton ? <SendDigestButton /> : null}
+            <Link
+              href="/compliance"
+              className="rounded-md border border-amber-300/60 bg-white/70 px-2.5 py-1 text-[11px] font-medium text-amber-900 transition-colors hover:bg-white"
+            >
+              View all
+            </Link>
+          </div>
         </div>
         <ul className="dash-rows flex flex-1 flex-col gap-1.5 overflow-y-auto">
           {visible.map((it) => (
