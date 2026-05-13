@@ -159,10 +159,10 @@ export function AppSidebar({
               expands the chip label to "Keylink Beta" once the rail opens. */}
           <div
             className="mt-auto flex flex-col items-center gap-1 pt-4 pb-1 whitespace-nowrap"
-            title={`Keylink CRM v${APP_VERSION} · Beta`}
+            title={`Keylink CRM · Beta ${APP_VERSION}`}
           >
-            <span className="text-[10px] font-mono font-medium tracking-tight text-brand-cloud/65">
-              v{APP_VERSION}
+            <span className="text-[9px] font-mono font-medium tracking-tight text-brand-cloud/65 transition-[font-size] duration-200 group-hover:text-[10px]">
+              Beta {APP_VERSION}
             </span>
             <span className="rounded-sm bg-brand-teal/20 px-1.5 py-0.5 text-[8px] font-semibold uppercase tracking-wider text-brand-teal-light">
               <span className="hidden group-hover:inline">Keylink </span>Beta
@@ -174,4 +174,4 @@ export function AppSidebar({
   )
 }
 
-const APP_VERSION = "0.1.0"
+const APP_VERSION = "2.4.0"
