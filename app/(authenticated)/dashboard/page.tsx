@@ -26,6 +26,7 @@ import {
 
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
+import { HeaderWidgets } from "@/components/dashboard/header-widgets"
 import {
   PreviewCard,
   PreviewCardContent,
@@ -194,12 +195,7 @@ export default async function DashboardPage() {
             Here&apos;s what&apos;s happening with your fleet today.
           </p>
         </div>
-        {profile.role === "admin" || profile.role === "dispatcher" ? (
-          <Link href="/loads/new" className={buttonVariants({ size: "sm" })}>
-            <Plus />
-            New Load
-          </Link>
-        ) : null}
+        <HeaderWidgets />
       </header>
 
       {profile.role === "admin" || profile.role === "dispatcher" ? (
