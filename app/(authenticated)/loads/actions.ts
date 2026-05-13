@@ -10,6 +10,10 @@ import {
   buildLoadAssignedEmail,
   type LoadAssignedEmailInput,
 } from "@/lib/emails/load-assigned"
+import {
+  buildLoadStatusUpdateEmail,
+  shouldNotifyCustomer,
+} from "@/lib/emails/load-status-update"
 import { getUsdToCadRate } from "@/lib/fx"
 import {
   loadSchema,
@@ -21,6 +25,7 @@ import {
 } from "@/lib/schemas/loads"
 import { createAdminClient } from "@/lib/supabase/admin"
 import { createClient } from "@/lib/supabase/server"
+import type { LoadStatus } from "@/lib/supabase/types"
 import { computeTax, computeTaxAmount } from "@/lib/tax"
 
 // Same env-then-header fallback used by other server actions so emailed
@@ -109,6 +114,76 @@ async function notifyDriverAssigned(opts: {
     await sendEmail({ to: driverEmail, subject, html, text })
   } catch {
     // Swallow — never block assignment on email failure.
+  }
+}
+
+// Best-effort customer status-update notification. Only fires for the
+// status values listed in shouldNotifyCustomer() (loaded, in_transit,
+// delivered, etc.) and only if the customer has an email on file.
+async function notifyCustomerStatusChange(opts: {
+  loadId: string
+  status: LoadStatus
+}): Promise<void> {
+  try {
+    if (!shouldNotifyCustomer(opts.status)) return
+
+    const admin = createAdminClient()
+    const { data: load } = await admin
+      .from("loads")
+      .select(
+        `id, load_number, customer_id, tracking_slug,
+         origin_city, origin_province,
+         destination_city, destination_province,
+         reference_number`,
+      )
+      .eq("id", opts.loadId)
+      .maybeSingle()
+    if (!load) return
+
+    let email: string | null = null
+    let customerName: string | null = null
+    let contactName: string | null = null
+    if (load.customer_id) {
+      const { data: c } = await admin
+        .from("customers")
+        .select("name, email, contact_name")
+        .eq("id", load.customer_id)
+        .maybeSingle()
+      email = c?.email ?? null
+      customerName = c?.name ?? null
+      contactName = c?.contact_name ?? null
+    }
+    if (!email) return
+
+    const siteUrl = await resolveSiteUrl()
+    const trackingUrl = `${siteUrl}/track/${load.tracking_slug}`
+
+    const built = buildLoadStatusUpdateEmail({
+      customerContactName: contactName,
+      customerName,
+      loadNumber: load.load_number,
+      status: opts.status,
+      origin: {
+        city: load.origin_city,
+        province: load.origin_province,
+      },
+      destination: {
+        city: load.destination_city,
+        province: load.destination_province,
+      },
+      trackingUrl,
+      referenceNumber: load.reference_number,
+    })
+    if (!built) return
+
+    await sendEmail({
+      to: email,
+      subject: built.subject,
+      html: built.html,
+      text: built.text,
+    })
+  } catch {
+    // Swallow — never block the status transition on a failed email.
   }
 }
 
@@ -320,6 +395,12 @@ export async function updateLoad(
       location_note: "Status manually corrected via edit form",
       created_by: me.id,
     })
+    // A manual status override that flips to a milestone status also
+    // notifies the customer.
+    await notifyCustomerStatusChange({
+      loadId: parsed.data.id,
+      status: overrideStatus,
+    })
   }
 
   if (driverChanged && parsed.data.driver_id) {
@@ -384,6 +465,12 @@ export async function transitionLoadStatus(
     created_by: me.id,
   })
   if (eventErr) return { error: eventErr.message }
+
+  // Customer-facing status ping (loaded / in_transit / delivered / etc.).
+  await notifyCustomerStatusChange({
+    loadId: parsed.data.id,
+    status: parsed.data.status,
+  })
 
   revalidatePath("/loads")
   revalidatePath(`/loads/${parsed.data.id}`)

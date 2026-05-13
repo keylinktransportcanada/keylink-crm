@@ -5,8 +5,12 @@ export type Json =
   | null
   | { [key: string]: Json | undefined }
   | Json[]
-
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "14.5"
+  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -759,6 +763,7 @@ export type Database = {
           tax_jurisdiction: string | null
           tax_rate_pct: number
           total_billed_cad: number | null
+          tracking_slug: string
           trailer_id: string | null
           truck_id: string | null
           updated_at: string
@@ -809,6 +814,7 @@ export type Database = {
           tax_jurisdiction?: string | null
           tax_rate_pct?: number
           total_billed_cad?: number | null
+          tracking_slug?: string
           trailer_id?: string | null
           truck_id?: string | null
           updated_at?: string
@@ -859,6 +865,7 @@ export type Database = {
           tax_jurisdiction?: string | null
           tax_rate_pct?: number
           total_billed_cad?: number | null
+          tracking_slug?: string
           trailer_id?: string | null
           truck_id?: string | null
           updated_at?: string
@@ -1195,6 +1202,27 @@ export type Database = {
         Args: { p_other_profile_id: string }
         Returns: string
       }
+      get_load_by_tracking_slug: {
+        Args: { p_slug: string }
+        Returns: {
+          customer_name: string
+          delivery_date: string
+          destination_city: string
+          destination_company: string
+          destination_country: string
+          destination_province: string
+          events: Json
+          is_cross_border: boolean
+          load_number: string
+          origin_city: string
+          origin_company: string
+          origin_country: string
+          origin_province: string
+          pickup_date: string
+          reference_number: string
+          status: Database["public"]["Enums"]["load_status"]
+        }[]
+      }
       has_role: {
         Args: { p_role: Database["public"]["Enums"]["app_role"] }
         Returns: boolean
@@ -1262,11 +1290,8 @@ export type Database = {
     }
   }
 }
-
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
@@ -1295,7 +1320,6 @@ export type Tables<
       ? R
       : never
     : never
-
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
@@ -1320,7 +1344,6 @@ export type TablesInsert<
       ? I
       : never
     : never
-
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
@@ -1345,7 +1368,6 @@ export type TablesUpdate<
       ? U
       : never
     : never
-
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
@@ -1362,7 +1384,6 @@ export type Enums<
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
-
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
@@ -1379,7 +1400,6 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
-
 export const Constants = {
   graphql_public: {
     Enums: {},
@@ -1450,4 +1470,3 @@ export type LoadType = Enums<"load_type">
 export type LoadCurrency = Enums<"load_currency">
 export type EquipmentStatus = Enums<"equipment_status">
 export type TrailerType = Enums<"trailer_type">
-
