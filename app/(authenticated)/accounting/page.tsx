@@ -69,9 +69,10 @@ export default async function AccountingPage({
   await requireRole(["admin", "accounting"])
   const supabase = await createClient()
 
-  const { sort } = await searchParams
-  // Default newest-first — most operators want to see what was delivered
-  // today / yesterday at the top, with older deliveries below.
+  // Next 16 hands a Promise; guard against the edge case where it's
+  // undefined or resolves to undefined so a destructure can't throw.
+  const resolved = (await searchParams) ?? {}
+  const sort = resolved.sort
   const invoiceQueueDir: "asc" | "desc" = sort === "asc" ? "asc" : "desc"
 
   // ---------------------------------------------------------------------
