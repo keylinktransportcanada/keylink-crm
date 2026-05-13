@@ -443,7 +443,9 @@ export async function createLoad(input: LoadInput): Promise<CreateResult> {
 export async function updateLoad(
   input: UpdateLoadInput,
 ): Promise<CreateResult> {
-  const me = await requireRole(["admin", "dispatcher"])
+  // Accounting can edit (RLS-gated to safe fields); see edit/page.tsx
+  // for the rationale.
+  const me = await requireRole(["admin", "dispatcher", "accounting"])
 
   const parsed = updateLoadSchema.safeParse(input)
   if (!parsed.success) {

@@ -8,7 +8,7 @@
 // component on this page produced a reproducible SSR crash.
 
 import { useState } from "react"
-import { CheckCircle2, Download, Loader2, X } from "lucide-react"
+import { CheckCircle2, Download, Loader2, Pencil, X } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -108,6 +108,13 @@ export function InvoicePreviewDialog({
               </DialogDescription>
             </div>
             <div className="flex shrink-0 items-center gap-2">
+              <a
+                href={`/loads/${loadId}/edit`}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted"
+              >
+                <Pencil className="size-3.5" />
+                Edit load
+              </a>
               <a
                 href={src}
                 target="_blank"

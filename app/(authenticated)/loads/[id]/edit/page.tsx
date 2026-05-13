@@ -15,7 +15,9 @@ export default async function EditLoadPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  await requireRole(["admin", "dispatcher"])
+  // Accounting can edit so they can fix billing fields (rate, tax,
+  // accessorials, reference numbers) on a delivered load before invoicing.
+  await requireRole(["admin", "dispatcher", "accounting"])
   const { id } = await params
   const supabase = await createClient()
 
