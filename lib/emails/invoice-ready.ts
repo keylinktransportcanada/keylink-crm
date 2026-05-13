@@ -157,8 +157,8 @@ export function buildInvoiceReadyEmail(input: InvoiceReadyEmailInput): {
               </table>
 
               <p style="margin:18px 0 0;font-size:13px;line-height:1.5;color:${COLOR.slate};">
-                Need a copy of the official invoice PDF, BOL, or POD? Reply to
-                this email and we'll send them across.
+                The official invoice PDF is attached. Need the BOL or POD too?
+                Reply to this email and we'll send them across.
               </p>
             </td>
           </tr>
@@ -198,7 +198,7 @@ export function buildInvoiceReadyEmail(input: InvoiceReadyEmailInput): {
     ``,
     `Shipment details: ${input.trackingUrl}`,
     ``,
-    `Need the PDF invoice or supporting docs? Reply to this email.`,
+    `The official invoice PDF is attached. Reply if you need the BOL or POD too.`,
     `— Keylink Transport`,
   ]
     .filter(Boolean)

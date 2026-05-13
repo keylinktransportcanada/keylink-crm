@@ -15,6 +15,7 @@ import {
   shouldNotifyCustomer,
 } from "@/lib/emails/load-status-update"
 import { buildInvoiceReadyEmail } from "@/lib/emails/invoice-ready"
+import { renderInvoicePdfForLoad } from "@/lib/invoice/render"
 import { getUsdToCadRate } from "@/lib/fx"
 import {
   loadSchema,
@@ -256,7 +257,31 @@ async function notifyCustomerInvoiced(opts: {
       issueDateISO: new Date().toISOString(),
     })
 
-    await sendEmail({ to: email, subject, html, text })
+    // Render the invoice PDF and attach it. Best-effort — if the render
+    // throws we still send the summary email without the PDF rather than
+    // dropping the notification entirely.
+    let pdfAttachment: { filename: string; content: Buffer } | null = null
+    try {
+      const rendered = await renderInvoicePdfForLoad(opts.loadId)
+      if (rendered) {
+        pdfAttachment = {
+          filename: rendered.filename,
+          content: rendered.pdf,
+        }
+      }
+    } catch {
+      // Ignore — summary-only fallback.
+    }
+
+    await sendEmail({
+      to: email,
+      subject,
+      html,
+      text,
+      attachments: pdfAttachment
+        ? [{ ...pdfAttachment, contentType: "application/pdf" }]
+        : undefined,
+    })
   } catch {
     // Swallow — never block the transition on a failed email.
   }

@@ -19,11 +19,19 @@ function getClient(): Resend | null {
   return cachedClient
 }
 
+export type EmailAttachment = {
+  filename: string
+  // Raw bytes — Resend SDK accepts Buffer or base64-encoded string.
+  content: Buffer
+  contentType?: string
+}
+
 export type SendEmailInput = {
   to: string | string[]
   subject: string
   html: string
   text?: string
+  attachments?: EmailAttachment[]
 }
 
 export type SendEmailResult =
@@ -52,6 +60,11 @@ export async function sendEmail(
       html: input.html,
       text: input.text,
       replyTo: REPLY_TO,
+      attachments: input.attachments?.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+        contentType: a.contentType,
+      })),
     })
 
     if (result.error) {

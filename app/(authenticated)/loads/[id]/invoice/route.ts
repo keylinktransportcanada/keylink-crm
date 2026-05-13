@@ -1,15 +1,9 @@
 // Renders a draft invoice PDF for a load. Uses @react-pdf/renderer which
 // requires the Node runtime (not Edge).
-import { readFile } from "node:fs/promises"
-import path from "node:path"
-
-import { renderToBuffer } from "@react-pdf/renderer"
-import { addDays, format, parseISO } from "date-fns"
 import { NextResponse } from "next/server"
 
 import { requireRole } from "@/lib/auth"
-import { InvoicePdf } from "@/lib/invoice/invoice-template"
-import { createClient } from "@/lib/supabase/server"
+import { renderInvoicePdfForLoad } from "@/lib/invoice/render"
 
 export const runtime = "nodejs"
 export const dynamic = "force-dynamic"
@@ -22,56 +16,16 @@ export async function GET(
   await requireRole(["admin", "dispatcher", "accounting"])
 
   const { id } = await params
-  const supabase = await createClient()
-
-  const { data: load, error } = await supabase
-    .from("loads")
-    .select("*")
-    .eq("id", id)
-    .maybeSingle()
-
-  if (error || !load) {
+  const rendered = await renderInvoicePdfForLoad(id)
+  if (!rendered) {
     return new NextResponse("Load not found", { status: 404 })
   }
 
-  const { data: customer, error: customerErr } = await supabase
-    .from("customers")
-    .select(
-      "name, contact_name, email, phone, address, billing_address, payment_terms_days, tax_id",
-    )
-    .eq("id", load.customer_id)
-    .maybeSingle()
-
-  if (customerErr || !customer) {
-    return new NextResponse("Customer not found", { status: 404 })
-  }
-
-  const today = format(new Date(), "yyyy-MM-dd")
-  const termsDays = customer.payment_terms_days ?? 30
-  const dueDate = format(addDays(parseISO(today), termsDays), "yyyy-MM-dd")
-
-  const logo = await readFile(
-    path.join(process.cwd(), "public", "logo-keylink.png"),
-  ).catch(() => null)
-
-  const pdf = await renderToBuffer(
-    InvoicePdf({
-      load,
-      customer,
-      meta: {
-        invoiceNumber: `INV-${load.load_number}`,
-        invoiceDate: today,
-        dueDate,
-        logo,
-      },
-    }),
-  )
-
-  return new NextResponse(new Uint8Array(pdf), {
+  return new NextResponse(new Uint8Array(rendered.pdf), {
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `inline; filename="${`INV-${load.load_number}.pdf`}"`,
+      "Content-Disposition": `inline; filename="${rendered.filename}"`,
       "Cache-Control": "private, no-store",
     },
   })
