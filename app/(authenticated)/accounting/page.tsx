@@ -14,6 +14,8 @@ import { requireRole } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/server"
 import { cn } from "@/lib/utils"
 
+import { MarkInvoicedButton } from "./mark-invoiced-button"
+
 const formatCAD = (value: number | null) =>
   value === null
     ? "—"
@@ -400,17 +402,22 @@ export default async function AccountingPage({
                       )}
                     </span>
                     <div className="relative z-10 flex items-center gap-2">
+                      <MarkInvoicedButton
+                        loadId={l.id}
+                        loadNumber={l.load_number}
+                      />
                       <a
                         href={`/loads/${l.id}/invoice`}
                         target="_blank"
                         rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
                         className={buttonVariants({
                           size: "sm",
                           variant: "outline",
                         })}
                       >
                         <FileText />
-                        Generate invoice
+                        PDF
                       </a>
                     </div>
                   </div>

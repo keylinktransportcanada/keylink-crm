@@ -1,17 +1,19 @@
 "use client"
 
 // Inline "Mark invoiced" button for the accounting invoice queue.
-// Flips the load's status from delivered → invoiced via the existing
-// transitionLoadStatus server action, which (post-Phase 12) also fires
-// the branded invoice-ready email to the customer.
+// Flips the load's status delivered → invoiced and fires the customer
+// invoice email. Imports the action from its co-located server file
+// (./actions) to avoid a cross-route-group import that earlier produced
+// an SSR crash on /accounting.
 
 import { useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { CheckCircle2, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
-import { transitionLoadStatus } from "@/app/(authenticated)/loads/actions"
 import { Button } from "@/components/ui/button"
+
+import { markLoadInvoiced } from "./actions"
 
 export function MarkInvoicedButton({
   loadId,
@@ -30,10 +32,7 @@ export function MarkInvoicedButton({
     e.stopPropagation()
 
     start(async () => {
-      const result = await transitionLoadStatus({
-        id: loadId,
-        status: "invoiced",
-      })
+      const result = await markLoadInvoiced(loadId)
       if ("error" in result) {
         toast.error(`Couldn't mark invoiced: ${result.error}`)
         return
