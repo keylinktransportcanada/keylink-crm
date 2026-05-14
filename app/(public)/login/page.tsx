@@ -39,19 +39,20 @@ export default async function LoginPage({
           priority
           className="h-8 w-auto lg:hidden"
         />
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2.5">
           <div className="flex items-center gap-2.5">
             <span className="size-1.5 rounded-full bg-brand-gold" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-brand-gold">
-              Sign in
+            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-gold">
+              Keylink ERP · Sign in
             </span>
           </div>
           <h1 className="font-display text-3xl uppercase tracking-wide text-brand-cloud">
             Welcome back
           </h1>
-          <p className="text-sm text-brand-cloud/60">
-            Use your Keylink credentials to access dispatch, drivers, and
-            operations.
+          <p className="text-sm leading-relaxed text-brand-cloud/65">
+            Sign in to dispatch, drive, or manage the books. Customers
+            tracking a shipment can use the secure link from their booking
+            confirmation. No account required.
           </p>
         </div>
       </div>
@@ -67,9 +68,14 @@ export default async function LoginPage({
 
       <AuthForm />
 
-      <p className="text-center text-xs text-brand-cloud/40">
-        Need an account? Contact your admin.
-      </p>
+      <div className="flex flex-col gap-1 text-center">
+        <p className="text-xs text-brand-cloud/45">
+          Staff account needed? Contact your admin.
+        </p>
+        <p className="text-xs text-brand-cloud/45">
+          Tracking a shipment? Use the link sent with your booking.
+        </p>
+      </div>
     </div>
   )
 }
