@@ -29,7 +29,7 @@ export default async function LoginPage({
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-2.5">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1.5">
             <div className="flex items-center gap-2.5">
               <span className="size-1.5 rounded-full bg-brand-gold" />
               <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-gold">
