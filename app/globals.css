@@ -186,6 +186,46 @@
   }
 }
 
+/* Generic path-trace redraw used by lucide icons wrapped with
+   withTraceAnimation(). dasharray:70 covers most lucide icon paths so the
+   trace appears to "draw" from one end to the other. Color and dimensions
+   are untouched — only stroke-dashoffset is animated. */
+@keyframes icon-trace-draw {
+  0% {
+    stroke-dashoffset: 70;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+.icon-trace path {
+  stroke-dasharray: 70;
+  stroke-dashoffset: 0;
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* KPI tile hosts: continuous heart-monitor redraw. Duration and start-phase
+     are sourced from CSS custom properties so withTraceAnimation() can vary
+     them per icon — different durations + negative delays = each icon stays
+     permanently out of phase with its neighbours. */
+  .kpi-tile .icon-trace path {
+    animation: icon-trace-draw var(--trace-duration, 2.6s) ease-in-out infinite;
+    animation-delay: var(--trace-delay, 0s);
+  }
+  .kpi-tile:hover .icon-trace path {
+    animation-duration: 0.8s;
+    animation-delay: 0s;
+  }
+  /* Topbar icon hosts: hover-only redraw (avoid distracting motion in the
+     sticky header). The bell-icon-host class is only applied when there
+     are unseen notifications, so the trace also signals "there's
+     something here for you" on hover. */
+  .chat-icon-host:hover .icon-trace path,
+  .bell-icon-host:hover .icon-trace path {
+    animation: icon-trace-draw 0.7s ease-out;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   /* Route-level cascade: applied once in AppShell. The wrapper doesn't
      remount, but on every navigation the page's elements are freshly

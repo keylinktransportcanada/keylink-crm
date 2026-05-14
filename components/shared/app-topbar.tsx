@@ -9,8 +9,8 @@ import {
   Bell,
   CalendarClock,
   CheckCircle2,
-  MessageCircle,
   MessageSquare,
+  MessageSquareMore,
   Search,
   Truck,
 } from "lucide-react"
@@ -26,9 +26,18 @@ import {
 } from "@/components/ui/popover"
 import { signOutAction } from "@/app/(public)/login/actions"
 import { markAllChatThreadsRead } from "@/app/(authenticated)/messages/actions"
+import { withTraceAnimation } from "@/lib/animated-icon"
 import type { CurrentProfile } from "@/lib/auth"
 import type { Notification } from "@/lib/notifications"
 import { cn } from "@/lib/utils"
+
+// Path-trace animated variants of the topbar icons. The chat icon animates
+// on hover of its Link host (.chat-icon-host); the bell icon animates on
+// hover of its Button host (.bell-icon-host) — but the host class is only
+// applied when unseenCount > 0, so the trace doubles as a "there's
+// something here for you" cue.
+const AnimatedBell = withTraceAnimation(Bell)
+const AnimatedMessageSquareMore = withTraceAnimation(MessageSquareMore)
 
 import { AvatarPickerDialog } from "./avatar-picker-dialog"
 import { UserAvatar } from "./user-avatar"
@@ -314,11 +323,21 @@ export function AppTopbar({
                       ? `Notifications: ${totalCount}`
                       : "Notifications"
                 }
-                className="relative border-white/15 bg-transparent text-brand-cloud hover:bg-white/5 hover:text-brand-cloud"
+                className={cn(
+                  "relative border-white/15 bg-transparent text-brand-cloud hover:bg-white/5 hover:text-brand-cloud",
+                  // Mark as a trace-animation host only when there are
+                  // unseen items — the icon then redraws on hover, giving
+                  // a subtle "look at me" cue in addition to the badge.
+                  unseenCount > 0 && "bell-icon-host",
+                )}
               />
             }
           >
-            <Bell className="size-4" />
+            {unseenCount > 0 ? (
+              <AnimatedBell className="size-4" />
+            ) : (
+              <Bell className="size-4" />
+            )}
             {unseenCount > 0 ? (
               <span
                 aria-hidden="true"
@@ -527,12 +546,12 @@ export function AppTopbar({
               : "Team chat"
           }
           className={cn(
-            "relative inline-flex h-8 items-center gap-1.5 rounded-md border border-white/15 bg-transparent px-2.5 text-brand-cloud transition-colors",
+            "chat-icon-host relative inline-flex h-8 items-center gap-1.5 rounded-md border border-white/15 bg-transparent px-2.5 text-brand-cloud transition-colors",
             "hover:bg-white/5 hover:border-white/25",
             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-light",
           )}
         >
-          <MessageCircle className="size-4" aria-hidden="true" />
+          <AnimatedMessageSquareMore className="size-4" aria-hidden="true" />
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
             Chat
           </span>
