@@ -31,7 +31,7 @@ const ENTITY_LABEL: Record<DigestItem["entityType"], string> = {
 export type ComplianceDigestEmailInput = {
   recipientName: string | null
   digest: ComplianceDigest
-  baseUrl: string // e.g. https://keylink-crm.netlify.app
+  baseUrl: string // e.g. https://app.keylinktransport.ca
   dashboardUrl: string
 }
 
