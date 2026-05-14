@@ -29,11 +29,29 @@ export default async function LoginPage({
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-5">
         <div className="flex flex-col gap-2.5">
-          <div className="flex items-center gap-2.5">
-            <span className="size-1.5 rounded-full bg-brand-gold" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-gold">
-              Keylink ERP · Sign in
-            </span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5">
+            <div className="flex items-center gap-2.5">
+              <span className="size-1.5 rounded-full bg-brand-gold" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-gold">
+                Keylink ERP · Sign in
+              </span>
+            </div>
+            <span
+              aria-hidden="true"
+              className="hidden h-2.5 w-px bg-brand-cloud/20 sm:block"
+            />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-brand-cloud/50">
+                Beta 2.4.1
+              </span>
+              <span className="relative inline-flex size-1.5 items-center justify-center">
+                <span className="absolute inline-flex size-1.5 animate-ping rounded-full bg-brand-teal-light/70" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-brand-teal-light" />
+              </span>
+              <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-brand-teal-light">
+                Live
+              </span>
+            </div>
           </div>
           <h1 className="font-display text-3xl uppercase tracking-wide text-brand-cloud">
             Welcome back

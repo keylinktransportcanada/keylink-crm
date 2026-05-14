@@ -82,6 +82,7 @@ function PasswordForm({ onForgot }: { onForgot: () => void }) {
 
   return (
     <Form {...form}>
+      {pending ? <SignInOverlay /> : null}
       <form
         onSubmit={form.handleSubmit(onSubmit)}
         className="flex flex-col gap-4"
@@ -220,6 +221,65 @@ function ResetRequestForm({
         </div>
       </form>
     </Form>
+  )
+}
+
+// Full-viewport overlay shown while the sign-in server action is pending.
+// Mirrors the brand-gradient spinner used by the authenticated CRM loading
+// state, so the visual handoff into /dashboard feels continuous. Dark-themed
+// to sit on top of the login surface.
+function SignInOverlay() {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      aria-label="Signing you in"
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-brand-midnight/85 backdrop-blur-md motion-safe:animate-in motion-safe:fade-in motion-safe:duration-300"
+    >
+      <svg
+        className="size-14 motion-safe:animate-spin [animation-duration:900ms]"
+        viewBox="0 0 50 50"
+        aria-hidden="true"
+      >
+        <defs>
+          <linearGradient id="kl-login-spin" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#22a092" />
+            <stop offset="60%" stopColor="#1a7b6e" />
+            <stop offset="100%" stopColor="#f0a820" />
+          </linearGradient>
+        </defs>
+        <circle
+          cx="25"
+          cy="25"
+          r="20"
+          fill="none"
+          stroke="#e8edf5"
+          strokeOpacity="0.12"
+          strokeWidth="3"
+        />
+        <circle
+          cx="25"
+          cy="25"
+          r="20"
+          fill="none"
+          stroke="url(#kl-login-spin)"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeDasharray="60 90"
+        />
+      </svg>
+      <div className="flex flex-col items-center gap-1 leading-tight">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.22em] text-brand-gold">
+          Keylink ERP
+        </span>
+        <span className="font-display text-2xl uppercase tracking-wide text-brand-cloud">
+          Signing you in
+        </span>
+        <span className="text-xs text-brand-cloud/55">
+          Preparing your dashboard
+        </span>
+      </div>
+    </div>
   )
 }
 
