@@ -127,6 +127,26 @@ const naFeatures: FeatureCollection<Geometry, { name: string }> = {
   features: allFeatures.features.filter((f) => NA_IDS.has(String(f.id))),
 }
 
+// Crop the projection to the main continent (southern Canada through northern
+// Mexico). Anything outside this box — arctic Canadian islands, Alaska/Yukon/
+// NWT/Nunavut, Hawaii — projects beyond the viewBox and is clipped by the SVG.
+const focusBounds: Feature<Geometry, { name: string }> = {
+  type: "Feature",
+  properties: { name: "focus" },
+  geometry: {
+    type: "Polygon",
+    coordinates: [
+      [
+        [-126, 24],
+        [-126, 55],
+        [-62, 55],
+        [-62, 24],
+        [-126, 24],
+      ],
+    ],
+  },
+}
+
 const projection = geoAlbers()
   .rotate([100, 0])
   .center([0, 12])
@@ -136,7 +156,7 @@ projection.fitExtent(
     [16, 16],
     [W - 16, H - 16],
   ],
-  naFeatures,
+  focusBounds,
 )
 const path = geoPath(projection)
 
@@ -398,9 +418,9 @@ export function OperationsMap({ points }: { points: MapPoint[] }) {
         </Link>
       </div>
 
-      <div className="flex flex-1 flex-col gap-4 px-5 py-4 sm:flex-row">
+      <div className="flex flex-1 flex-col gap-2 px-5 py-4 sm:flex-row sm:gap-2.5">
         {/* Status filter cards (left rail). */}
-        <aside className="flex shrink-0 flex-row gap-2 sm:w-[124px] sm:flex-col">
+        <aside className="flex shrink-0 flex-row gap-2 sm:w-[108px] sm:flex-col">
           {categories.map((cat) => {
             const meta = CATEGORY_META[cat]
             const isActive = activeCategory === cat

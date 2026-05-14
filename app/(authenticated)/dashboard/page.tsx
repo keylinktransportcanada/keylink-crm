@@ -8,21 +8,28 @@ import {
   CalendarClock,
   ChevronRight,
   CircleCheck,
+  CircleCheckBig,
   CircleDollarSign,
   Clock,
   Container,
   FileText,
+  GalleryVerticalEnd,
   ListChecks,
+  MessageCircleWarning,
   Package,
   PackageCheck,
   Plus,
+  SendHorizontal,
   ShieldAlert,
   TrendingUp,
   Truck as TruckIcon,
   UserCheck,
+  UserRound,
   Wrench,
   type LucideIcon,
 } from "lucide-react"
+
+import { withTraceAnimation } from "@/lib/animated-icon"
 
 import { Badge } from "@/components/ui/badge"
 import { buttonVariants } from "@/components/ui/button"
@@ -65,6 +72,36 @@ import {
   type RecentCorrection,
 } from "./driver-correction-toast"
 import { MessageThread } from "@/app/(authenticated)/trucks/[id]/inspection-history"
+
+// KPI icons wrapped with path-trace redraw. Each has a slightly different
+// duration and a negative starting delay so the six tiles never animate in
+// lockstep — they drift relative to each other and feel naturally alive.
+// All speed up to 0.8s on hover of the parent .kpi-tile. See
+// app/globals.css for the .icon-trace + .kpi-tile rules.
+const AnimatedActivity = withTraceAnimation(Activity, {
+  duration: "2.3s",
+  delay: "-0.4s",
+})
+const AnimatedMessageCircleWarning = withTraceAnimation(MessageCircleWarning, {
+  duration: "2.7s",
+  delay: "-1.6s",
+})
+const AnimatedGalleryVerticalEnd = withTraceAnimation(GalleryVerticalEnd, {
+  duration: "2.5s",
+  delay: "-0.9s",
+})
+const AnimatedCircleCheckBig = withTraceAnimation(CircleCheckBig, {
+  duration: "2.9s",
+  delay: "-2.1s",
+})
+const AnimatedUserRound = withTraceAnimation(UserRound, {
+  duration: "2.4s",
+  delay: "-1.2s",
+})
+const AnimatedSendHorizontal = withTraceAnimation(SendHorizontal, {
+  duration: "2.6s",
+  delay: "-0.2s",
+})
 
 type LoadStatus = (typeof LOAD_STATUS_VALUES)[number]
 
@@ -178,22 +215,53 @@ export default async function DashboardPage() {
     "accounting",
   ])
 
+  const roleBadge: Record<typeof profile.role, { label: string; sub: string }> = {
+    admin: {
+      label: "Admin overview",
+      sub: "Company-wide health, compliance, and team activity.",
+    },
+    dispatcher: {
+      label: "Dispatch console",
+      sub: "Live loads, driver availability, and today's pickups.",
+    },
+    driver: {
+      label: "Driver hub",
+      sub: "Your assigned loads, status updates, and compliance.",
+    },
+    accounting: {
+      label: "Accounting desk",
+      sub: "Invoicing queue, aging A/R, and revenue.",
+    },
+  }
+  const role = roleBadge[profile.role]
+
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-1.5">
-          <h1 className="font-sans text-[1.75rem] font-bold tracking-tight text-brand-navy sm:text-[2rem] lg:text-[2.25rem] lg:leading-[1.15]">
-            Welcome back
-            {profile.full_name
-              ? `, ${profile.full_name.split(" ")[0]}!`
-              : "!"}
-            <span aria-hidden="true" className="ml-2 inline-block">
-              👋
+          <h1 className="flex flex-wrap items-center gap-x-3 gap-y-2 font-sans text-[1.75rem] font-bold tracking-tight text-brand-navy sm:text-[2rem] lg:text-[2.25rem] lg:leading-[1.15]">
+            <span>
+              Welcome back
+              {profile.full_name
+                ? `, ${profile.full_name.split(" ")[0]}!`
+                : "!"}
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 align-middle text-[11px] font-semibold uppercase tracking-[0.14em] text-emerald-600">
+              <span
+                className="size-1.5 rounded-full bg-emerald-500"
+                aria-hidden="true"
+              />
+              {role.label}
+            </span>
+            <span className="inline-flex items-center gap-1 align-middle text-[10px] font-medium normal-case tracking-normal text-emerald-600">
+              <span className="relative flex size-1.5" aria-hidden="true">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-emerald-500" />
+              </span>
+              server live
             </span>
           </h1>
-          <p className="text-sm text-muted-foreground">
-            Here&apos;s what&apos;s happening with your fleet today.
-          </p>
+          <p className="text-sm text-muted-foreground">{role.sub}</p>
         </div>
         <HeaderWidgets />
       </header>
@@ -776,7 +844,7 @@ async function DispatchView({
       <div className="dash-stagger grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Kpi
           compact
-          icon={Activity}
+          icon={AnimatedActivity}
           label="In progress"
           value={inProgress.length}
           accent="indigo"
@@ -784,7 +852,11 @@ async function DispatchView({
         />
         <Kpi
           compact
-          icon={unassigned.length > 0 ? AlertTriangle : CircleCheck}
+          icon={
+            unassigned.length > 0
+              ? AnimatedMessageCircleWarning
+              : CircleCheck
+          }
           label="Unassigned"
           value={unassigned.length}
           accent={unassigned.length > 0 ? "red" : "muted"}
@@ -792,31 +864,31 @@ async function DispatchView({
         />
         <Kpi
           compact
-          icon={CalendarClock}
+          icon={AnimatedGalleryVerticalEnd}
           label="Pickups today"
           value={pickupsToday.length}
           accent="amber"
         />
         <Kpi
           compact
-          icon={PackageCheck}
+          icon={AnimatedCircleCheckBig}
           label="Delivered today"
           value={deliveredToday.length}
           accent="emerald"
         />
         <Kpi
           compact
-          icon={UserCheck}
+          icon={AnimatedUserRound}
           label="Active drivers"
           value={activeDriversCount ?? 0}
-          accent="blue"
+          accent="violet"
         />
         <Kpi
           compact
-          icon={TruckIcon}
+          icon={AnimatedSendHorizontal}
           label="Available trucks"
           value={availableTrucksCount ?? 0}
-          accent="blue"
+          accent="orange"
         />
       </div>
 
@@ -830,7 +902,7 @@ async function DispatchView({
           the compliance/expiry alert panel pinned alongside as a side rail.
           Both cards stretch to identical heights via items-stretch + h-full
           on the children. */}
-      <div className="dash-stagger grid items-stretch gap-3 lg:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+      <div className="dash-stagger grid items-stretch gap-3 md:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
         <OperationsMap points={mapPoints} />
         {topExpiryAlerts.length > 0 ? (
           <ExpiryAlertsCard
@@ -2771,13 +2843,22 @@ function CardLabel({ children }: { children: React.ReactNode }) {
 // are picked to read against the brand-midnight backdrop without overpowering
 // the brand-cloud body text.
 const ACCENT_TONE: Record<
-  "blue" | "indigo" | "emerald" | "amber" | "red" | "muted",
+  | "blue"
+  | "indigo"
+  | "violet"
+  | "emerald"
+  | "amber"
+  | "orange"
+  | "red"
+  | "muted",
   string
 > = {
   blue: "text-blue-200",
   indigo: "text-indigo-200",
+  violet: "text-violet-300",
   emerald: "text-emerald-200",
   amber: "text-amber-200",
+  orange: "text-orange-300",
   red: "text-red-300",
   muted: "text-brand-cloud",
 }
@@ -2785,10 +2866,34 @@ const ACCENT_TONE: Record<
 const ICON_BG: Record<keyof typeof ACCENT_TONE, string> = {
   blue: "bg-blue-400/15 text-blue-200",
   indigo: "bg-indigo-400/15 text-indigo-200",
+  violet: "bg-violet-400/15 text-violet-300",
   emerald: "bg-emerald-400/15 text-emerald-200",
   amber: "bg-amber-400/15 text-amber-200",
+  orange: "bg-orange-400/15 text-orange-300",
   red: "bg-red-400/15 text-red-200",
   muted: "bg-white/10 text-brand-cloud/80",
+}
+
+// KPI value treatment — text color matches the icon's accent, plus a layered
+// text-shadow that produces a glow in the same hue. Two stacked shadows
+// (tight + wide) give the numbers a soft, lit-from-within look without
+// hurting legibility on the dark surface.
+const VALUE_TONE: Record<keyof typeof ACCENT_TONE, string> = {
+  blue:
+    "text-blue-200 [text-shadow:0_0_14px_rgba(96,165,250,0.55),0_0_32px_rgba(96,165,250,0.22)]",
+  indigo:
+    "text-indigo-200 [text-shadow:0_0_14px_rgba(129,140,248,0.55),0_0_32px_rgba(129,140,248,0.22)]",
+  violet:
+    "text-violet-300 [text-shadow:0_0_14px_rgba(167,139,250,0.6),0_0_32px_rgba(167,139,250,0.25)]",
+  emerald:
+    "text-emerald-200 [text-shadow:0_0_14px_rgba(52,211,153,0.55),0_0_32px_rgba(52,211,153,0.22)]",
+  amber:
+    "text-amber-200 [text-shadow:0_0_14px_rgba(251,191,36,0.6),0_0_32px_rgba(251,191,36,0.25)]",
+  orange:
+    "text-orange-300 [text-shadow:0_0_14px_rgba(251,146,60,0.65),0_0_32px_rgba(251,146,60,0.28)]",
+  red: "text-red-300 [text-shadow:0_0_14px_rgba(248,113,113,0.65),0_0_32px_rgba(248,113,113,0.28)]",
+  muted:
+    "text-brand-cloud [text-shadow:0_0_14px_rgba(232,237,245,0.3),0_0_28px_rgba(232,237,245,0.12)]",
 }
 
 function Kpi({
@@ -2837,15 +2942,13 @@ function Kpi({
           </span>
         ) : null}
       </div>
-      {/* Liquid Retina XDR–style rainbow wash on the value, with elegant
-          count-up on mount. Accent color is reserved for the icon chip
-          so this stays consistent across tiles. */}
+      {/* Value picks up the same hue as the icon accent, plus a soft glow
+          in that hue. Elegant count-up on mount. */}
       <CountUp
         value={value}
         className={cn(
-          "font-display tracking-wide tabular-nums bg-clip-text text-transparent",
-          "bg-[linear-gradient(90deg,#6EE7B7_0%,#67E8F9_28%,#A5B4FC_52%,#FCD34D_76%,#FB923C_100%)]",
-          "drop-shadow-[0_1px_8px_rgba(255,255,255,0.08)]",
+          "font-display tracking-wide tabular-nums",
+          VALUE_TONE[accent],
           compact ? "text-2xl" : "text-3xl",
         )}
       />
@@ -2857,7 +2960,7 @@ function Kpi({
   // is identical to the map at a glance. Inline rather than via a Tailwind
   // arbitrary class to dodge any utility-name collision.
   const className = cn(
-    "relative isolate flex flex-col justify-between gap-1 overflow-hidden rounded-xl border border-white/10 text-brand-cloud [box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_24px_48px_-16px_rgba(10,14,26,0.45),0_4px_16px_-4px_rgba(10,14,26,0.25)]",
+    "kpi-tile relative isolate flex flex-col justify-between gap-1 overflow-hidden rounded-xl border border-white/10 text-brand-cloud [box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_24px_48px_-16px_rgba(10,14,26,0.45),0_4px_16px_-4px_rgba(10,14,26,0.25)]",
     compact ? "p-3 gap-1.5" : "p-4 gap-2",
   )
   const surfaceStyle = {
@@ -2868,19 +2971,26 @@ function Kpi({
     ].join(", "),
   } as const
 
+  // Hover treatment: subtle lift + a layered drop shadow with a faint teal
+  // halo ring. Mirrors the elegant elevation used on the Quick Actions
+  // cards (eg. "Create load") but darker/deeper to read on the brand
+  // midnight surface. Non-clickable tiles (no href) stay static.
+  const hoverClassName = cn(
+    "transition-[transform,box-shadow,border-color,filter] duration-200 ease-out",
+    "hover:-translate-y-0.5 hover:border-white/20 hover:[filter:brightness(1.08)]",
+    "hover:[box-shadow:inset_0_1px_0_rgba(255,255,255,0.20),0_32px_64px_-16px_rgba(10,14,26,0.70),0_12px_28px_-4px_rgba(10,14,26,0.40),0_0_0_1px_rgba(34,160,146,0.22)]",
+  )
+
   return href ? (
     <Link
       href={href}
       style={surfaceStyle}
-      className={cn(
-        className,
-        "transition-colors hover:border-white/15 hover:[filter:brightness(1.12)]",
-      )}
+      className={cn(className, hoverClassName)}
     >
       {inner}
     </Link>
   ) : (
-    <div style={surfaceStyle} className={className}>
+    <div style={surfaceStyle} className={cn(className, hoverClassName)}>
       {inner}
     </div>
   )
