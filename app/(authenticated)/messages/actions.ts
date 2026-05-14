@@ -193,3 +193,18 @@ export async function markThreadRead(threadId: string): Promise<Result<object>> 
   revalidatePath("/messages")
   return { ok: true }
 }
+
+// Bumps last_read_at to now across every thread the user belongs to. Used by
+// the topbar chat icon to clear the unread badge in one click without having
+// to open each thread individually.
+export async function markAllChatThreadsRead(): Promise<Result<object>> {
+  const me = await requireRole(["admin", "dispatcher", "driver", "accounting"])
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from("chat_thread_members")
+    .update({ last_read_at: new Date().toISOString() })
+    .eq("profile_id", me.id)
+  if (error) return { error: error.message }
+  revalidatePath("/messages")
+  return { ok: true }
+}

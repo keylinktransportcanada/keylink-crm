@@ -2,7 +2,8 @@
 
 import Image from "next/image"
 import Link from "next/link"
-import { useEffect, useMemo, useState, useTransition } from "react"
+import { usePathname } from "next/navigation"
+import { useCallback, useEffect, useMemo, useState, useTransition } from "react"
 import {
   AlertTriangle,
   Bell,
@@ -24,6 +25,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { signOutAction } from "@/app/(public)/login/actions"
+import { markAllChatThreadsRead } from "@/app/(authenticated)/messages/actions"
 import type { CurrentProfile } from "@/lib/auth"
 import type { Notification } from "@/lib/notifications"
 import { cn } from "@/lib/utils"
@@ -67,6 +69,7 @@ export function AppTopbar({
   notifications: Notification[]
   chatUnreadCount?: number
 }) {
+  const pathname = usePathname()
   const [pending, startTransition] = useTransition()
   const [pickerOpen, setPickerOpen] = useState(false)
   const [popoverOpen, setPopoverOpen] = useState(false)
@@ -75,6 +78,36 @@ export function AppTopbar({
   // null until hydrated — keeps the SSR markup deterministic (no badge) and
   // avoids a hydration mismatch on the count.
   const [seenIds, setSeenIds] = useState<Set<string> | null>(null)
+  // The server-side unread count value we've acknowledged. The badge renders
+  // 0 while this matches the current prop. When a new message bumps the prop
+  // higher, the badge re-pops without losing the "ack" intent.
+  const [ackChatCount, setAckChatCount] = useState<number | null>(null)
+  const effectiveChatCount =
+    ackChatCount !== null && ackChatCount >= chatUnreadCount ? 0 : chatUnreadCount
+
+  // Optimistically clears the chat badge and fires the server-side
+  // mark-all-read action. Safe to call repeatedly — idempotent on the DB
+  // side, and we only call the action when there are unread items.
+  const ackChat = useCallback(() => {
+    setAckChatCount(chatUnreadCount)
+    if (chatUnreadCount === 0) return
+    startTransition(async () => {
+      await markAllChatThreadsRead()
+    })
+  }, [chatUnreadCount])
+
+  // Snapshot every current notification id as seen. Persists to localStorage
+  // so the badge survives page reloads. Used by the popover-open effect, the
+  // dashboard auto-seen effect, and the explicit "Mark all read" button.
+  const markAllSeen = useCallback(() => {
+    const ids = notifications.map((n) => n.id)
+    setSeenIds(new Set(ids))
+    try {
+      window.localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(ids))
+    } catch {
+      // localStorage unavailable (private mode etc.) — in-memory only.
+    }
+  }, [notifications])
 
   // Global Cmd+K / Ctrl+K toggles the command palette.
   useEffect(() => {
@@ -101,15 +134,26 @@ export function AppTopbar({
   // the "checked" moment.
   useEffect(() => {
     if (!popoverOpen) return
-    const ids = notifications.map((n) => n.id)
-    setSeenIds(new Set(ids))
-    try {
-      window.localStorage.setItem(SEEN_STORAGE_KEY, JSON.stringify(ids))
-    } catch {
-      // localStorage unavailable (private mode etc.) — badge will clear in
-      // memory for the session, just won't survive a reload.
-    }
-  }, [popoverOpen, notifications])
+    markAllSeen()
+  }, [popoverOpen, markAllSeen])
+
+  // Auto-mark seen while the user is on /dashboard. The dashboard's
+  // compliance + activity widgets show the same notifications, so if they're
+  // looking at the dashboard they have effectively seen them — no reason to
+  // keep the bell badge lit. Survives realtime refreshes by re-snapshotting
+  // whenever the notifications list changes while still on /dashboard.
+  useEffect(() => {
+    if (pathname !== "/dashboard") return
+    markAllSeen()
+  }, [pathname, markAllSeen])
+
+  // Auto-mark chat threads read while the user is on /messages. They're about
+  // to look at every thread anyway; one DB write here saves the badge from
+  // lying about unread state in the topbar.
+  useEffect(() => {
+    if (pathname?.startsWith("/messages") !== true) return
+    ackChat()
+  }, [pathname, ackChat])
 
   // Mark inspection-message ids as seen when the chat popover opens. Shares
   // the same seen-set as the bell so opening either one clears the message
@@ -298,7 +342,7 @@ export function AppTopbar({
               "[box-shadow:inset_0_1px_0_rgba(255,255,255,0.12),0_24px_48px_-16px_rgba(10,14,26,0.45),0_4px_16px_-4px_rgba(10,14,26,0.25)]",
             )}
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-semibold">Notifications</h3>
                 {totalCount > 0 ? (
@@ -307,12 +351,23 @@ export function AppTopbar({
                   </span>
                 ) : null}
               </div>
-              {urgentCount > 0 ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-red-100">
-                  <AlertTriangle className="size-3" />
-                  {urgentCount} urgent
-                </span>
-              ) : null}
+              <div className="flex items-center gap-2">
+                {urgentCount > 0 ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-red-100">
+                    <AlertTriangle className="size-3" />
+                    {urgentCount} urgent
+                  </span>
+                ) : null}
+                {unseenCount > 0 ? (
+                  <button
+                    type="button"
+                    onClick={markAllSeen}
+                    className="rounded-md border border-white/15 bg-transparent px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-brand-cloud/70 transition-colors hover:bg-white/5 hover:text-brand-cloud"
+                  >
+                    Mark all read
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             <div className="max-h-[480px] overflow-y-auto">
@@ -460,14 +515,15 @@ export function AppTopbar({
 
         <Link
           href="/messages"
+          onClick={ackChat}
           aria-label={
-            chatUnreadCount > 0
-              ? `Team chat: ${chatUnreadCount} unread`
+            effectiveChatCount > 0
+              ? `Team chat: ${effectiveChatCount} unread`
               : "Team chat"
           }
           title={
-            chatUnreadCount > 0
-              ? `Team chat — ${chatUnreadCount} unread`
+            effectiveChatCount > 0
+              ? `Team chat — ${effectiveChatCount} unread`
               : "Team chat"
           }
           className={cn(
@@ -480,12 +536,12 @@ export function AppTopbar({
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em]">
             Chat
           </span>
-          {chatUnreadCount > 0 ? (
+          {effectiveChatCount > 0 ? (
             <span
               aria-hidden="true"
               className="absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-500 px-1 text-[9px] font-bold leading-none text-white ring-2 ring-brand-midnight"
             >
-              {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+              {effectiveChatCount > 99 ? "99+" : effectiveChatCount}
             </span>
           ) : null}
         </Link>
