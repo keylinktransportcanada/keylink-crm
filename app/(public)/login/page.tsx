@@ -1,5 +1,3 @@
-import Image from "next/image"
-
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 import { AuthForm } from "./auth-form"
@@ -30,15 +28,6 @@ export default async function LoginPage({
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-5">
-        {/* Compact logo for mobile (brand panel is hidden < lg). */}
-        <Image
-          src="/logo-keylink.png"
-          alt="Keylink Transport"
-          width={150}
-          height={40}
-          priority
-          className="h-8 w-auto lg:hidden"
-        />
         <div className="flex flex-col gap-2.5">
           <div className="flex items-center gap-2.5">
             <span className="size-1.5 rounded-full bg-brand-gold" />
