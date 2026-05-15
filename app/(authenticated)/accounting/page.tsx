@@ -7,6 +7,7 @@ import {
   FileText,
   Receipt,
   TrendingUp,
+  Wallet,
 } from "lucide-react"
 
 import { buttonVariants } from "@/components/ui/button"
@@ -668,6 +669,29 @@ export default async function AccountingPage({
           set by your CRA filing frequency (monthly, quarterly, or annual).
         </p>
       </section>
+
+      {/* Driver settlements entry point ------------------------------ */}
+      <Link
+        href="/accounting/settlements"
+        className="group flex items-start gap-4 rounded-xl border border-border/70 bg-card p-5 shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.12)] transition-all hover:-translate-y-0.5 hover:border-brand-gold/40 hover:shadow-[0_4px_8px_rgba(18,41,74,0.06),0_16px_32px_-12px_rgba(18,41,74,0.18)]"
+      >
+        <span
+          className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-brand-gold/15 text-brand-gold"
+          aria-hidden="true"
+        >
+          <Wallet className="size-5" />
+        </span>
+        <div className="flex flex-1 flex-col gap-1">
+          <h2 className="text-sm font-semibold text-brand-navy">
+            Driver settlements →
+          </h2>
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Pay-period statements per driver. Snapshots the pay rate at the
+            time of generation, supports bonuses and deductions, locks once
+            the payment is recorded.
+          </p>
+        </div>
+      </Link>
 
       {/* IFTA entry point -------------------------------------------- */}
       <Link

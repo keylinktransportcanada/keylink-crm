@@ -5,12 +5,8 @@ export type Json =
   | null
   | { [key: string]: Json | undefined }
   | Json[]
+
 export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
   graphql_public: {
     Tables: {
       [_ in never]: never
@@ -364,6 +360,8 @@ export type Database = {
           licence_province: string | null
           medical_cert_expiry: string | null
           notes: string | null
+          pay_method: Database["public"]["Enums"]["driver_pay_method"]
+          pay_rate: number
           profile_id: string
           updated_at: string
         }
@@ -381,6 +379,8 @@ export type Database = {
           licence_province?: string | null
           medical_cert_expiry?: string | null
           notes?: string | null
+          pay_method?: Database["public"]["Enums"]["driver_pay_method"]
+          pay_rate?: number
           profile_id: string
           updated_at?: string
         }
@@ -398,6 +398,8 @@ export type Database = {
           licence_province?: string | null
           medical_cert_expiry?: string | null
           notes?: string | null
+          pay_method?: Database["public"]["Enums"]["driver_pay_method"]
+          pay_rate?: number
           profile_id?: string
           updated_at?: string
         }
@@ -406,6 +408,173 @@ export type Database = {
             foreignKeyName: "driver_profiles_profile_id_fkey"
             columns: ["profile_id"]
             isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_settlement_adjustments: {
+        Row: {
+          amount_cad: number
+          created_at: string
+          description: string
+          id: string
+          kind: Database["public"]["Enums"]["settlement_adjustment_kind"]
+          settlement_id: string
+        }
+        Insert: {
+          amount_cad: number
+          created_at?: string
+          description: string
+          id?: string
+          kind: Database["public"]["Enums"]["settlement_adjustment_kind"]
+          settlement_id: string
+        }
+        Update: {
+          amount_cad?: number
+          created_at?: string
+          description?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["settlement_adjustment_kind"]
+          settlement_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_settlement_adjustments_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "driver_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_settlement_lines: {
+        Row: {
+          amount_cad: number
+          created_at: string
+          id: string
+          load_id: string
+          load_rate_cad: number | null
+          notes: string | null
+          pay_method: Database["public"]["Enums"]["driver_pay_method"]
+          pay_rate: number
+          settlement_id: string
+          total_km: number | null
+        }
+        Insert: {
+          amount_cad: number
+          created_at?: string
+          id?: string
+          load_id: string
+          load_rate_cad?: number | null
+          notes?: string | null
+          pay_method: Database["public"]["Enums"]["driver_pay_method"]
+          pay_rate: number
+          settlement_id: string
+          total_km?: number | null
+        }
+        Update: {
+          amount_cad?: number
+          created_at?: string
+          id?: string
+          load_id?: string
+          load_rate_cad?: number | null
+          notes?: string | null
+          pay_method?: Database["public"]["Enums"]["driver_pay_method"]
+          pay_rate?: number
+          settlement_id?: string
+          total_km?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_settlement_lines_load_id_fkey"
+            columns: ["load_id"]
+            isOneToOne: true
+            referencedRelation: "loads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_settlement_lines_settlement_id_fkey"
+            columns: ["settlement_id"]
+            isOneToOne: false
+            referencedRelation: "driver_settlements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_settlements: {
+        Row: {
+          adjustments_cad: number
+          created_at: string
+          created_by: string | null
+          driver_id: string
+          gross_load_cad: number
+          id: string
+          loads_count: number
+          notes: string | null
+          paid_at: string | null
+          paid_method: string | null
+          paid_reference: string | null
+          pay_method: Database["public"]["Enums"]["driver_pay_method"]
+          pay_rate: number
+          period_end: string
+          period_start: string
+          status: Database["public"]["Enums"]["settlement_status"]
+          total_cad: number
+          updated_at: string
+        }
+        Insert: {
+          adjustments_cad?: number
+          created_at?: string
+          created_by?: string | null
+          driver_id: string
+          gross_load_cad?: number
+          id?: string
+          loads_count?: number
+          notes?: string | null
+          paid_at?: string | null
+          paid_method?: string | null
+          paid_reference?: string | null
+          pay_method: Database["public"]["Enums"]["driver_pay_method"]
+          pay_rate: number
+          period_end: string
+          period_start: string
+          status?: Database["public"]["Enums"]["settlement_status"]
+          total_cad?: number
+          updated_at?: string
+        }
+        Update: {
+          adjustments_cad?: number
+          created_at?: string
+          created_by?: string | null
+          driver_id?: string
+          gross_load_cad?: number
+          id?: string
+          loads_count?: number
+          notes?: string | null
+          paid_at?: string | null
+          paid_method?: string | null
+          paid_reference?: string | null
+          pay_method?: Database["public"]["Enums"]["driver_pay_method"]
+          pay_rate?: number
+          period_end?: string
+          period_start?: string
+          status?: Database["public"]["Enums"]["settlement_status"]
+          total_cad?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_settlements_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_settlements_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -1232,6 +1401,10 @@ export type Database = {
       is_dispatcher_or_admin: { Args: never; Returns: boolean }
       next_employee_id: { Args: never; Returns: string }
       next_load_number: { Args: never; Returns: string }
+      recompute_settlement_totals: {
+        Args: { p_settlement_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "dispatcher" | "driver" | "accounting"
@@ -1251,6 +1424,7 @@ export type Database = {
         | "insurance"
         | "registration"
         | "other"
+      driver_pay_method: "percent_revenue" | "flat_per_load" | "per_km"
       equipment_status: "active" | "maintenance" | "out_of_service" | "retired"
       inspection_severity: "none" | "minor" | "major"
       inspection_type: "pre_trip" | "post_trip" | "en_route"
@@ -1277,6 +1451,12 @@ export type Database = {
         | "repair"
         | "preventive"
         | "other"
+      settlement_adjustment_kind:
+        | "bonus"
+        | "deduction"
+        | "reimbursement"
+        | "advance"
+      settlement_status: "draft" | "finalized" | "paid"
       trailer_type:
         | "dry_van"
         | "reefer"
@@ -1290,8 +1470,11 @@ export type Database = {
     }
   }
 }
+
 type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
 type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
@@ -1320,6 +1503,7 @@ export type Tables<
       ? R
       : never
     : never
+
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
@@ -1344,6 +1528,7 @@ export type TablesInsert<
       ? I
       : never
     : never
+
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
@@ -1368,6 +1553,7 @@ export type TablesUpdate<
       ? U
       : never
     : never
+
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
@@ -1384,6 +1570,7 @@ export type Enums<
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
+
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
@@ -1400,6 +1587,7 @@ export type CompositeTypes<
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
 export const Constants = {
   graphql_public: {
     Enums: {},
@@ -1424,6 +1612,7 @@ export const Constants = {
         "registration",
         "other",
       ],
+      driver_pay_method: ["percent_revenue", "flat_per_load", "per_km"],
       equipment_status: ["active", "maintenance", "out_of_service", "retired"],
       inspection_severity: ["none", "minor", "major"],
       inspection_type: ["pre_trip", "post_trip", "en_route"],
@@ -1452,6 +1641,13 @@ export const Constants = {
         "preventive",
         "other",
       ],
+      settlement_adjustment_kind: [
+        "bonus",
+        "deduction",
+        "reimbursement",
+        "advance",
+      ],
+      settlement_status: ["draft", "finalized", "paid"],
       trailer_type: [
         "dry_van",
         "reefer",
@@ -1463,6 +1659,7 @@ export const Constants = {
     },
   },
 } as const
+
 
 export type AppRole = Enums<"app_role">
 export type LoadStatus = Enums<"load_status">

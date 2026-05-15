@@ -27,9 +27,35 @@ export const driverProfileSchema = z.object({
 
   hire_date: optDate,
   notes: optStr(2000),
+
+  // Pay configuration. Mirrors the DB enum on driver_profiles.
+  pay_method: z.enum(["percent_revenue", "flat_per_load", "per_km"]),
+  pay_rate: z
+    .number()
+    .nonnegative({ message: "Rate must be 0 or more." })
+    .max(999999, { message: "Rate is unreasonably large." }),
 })
 
 export type DriverProfileInput = z.infer<typeof driverProfileSchema>
+
+export const PAY_METHOD_LABEL: Record<
+  DriverProfileInput["pay_method"],
+  string
+> = {
+  percent_revenue: "% of load revenue",
+  flat_per_load: "Flat $ per load",
+  per_km: "$ per kilometre",
+}
+
+// Format helpers for the UI so the input/value flips its meaning per method.
+export function formatPayRate(
+  method: DriverProfileInput["pay_method"],
+  rate: number,
+): string {
+  if (method === "percent_revenue") return `${(rate * 100).toFixed(1)}%`
+  if (method === "per_km") return `$${rate.toFixed(2)} / km`
+  return `$${rate.toFixed(2)} / load`
+}
 
 // Driver-facing self-edit: only emergency contact fields. Mirrors the DB
 // trigger guard.

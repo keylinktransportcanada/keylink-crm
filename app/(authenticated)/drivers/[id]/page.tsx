@@ -101,6 +101,8 @@ export default async function DriverDetailPage({
     emergency_contact_phone: dp?.emergency_contact_phone ?? "",
     hire_date: dp?.hire_date ?? "",
     notes: dp?.notes ?? "",
+    pay_method: dp?.pay_method ?? ("percent_revenue" as const),
+    pay_rate: Number(dp?.pay_rate ?? 0),
   }
 
   return (

@@ -28,8 +28,10 @@ import { CA_PROVINCES } from "@/lib/regions"
 import {
   driverProfileSchema,
   LICENCE_CLASSES,
+  PAY_METHOD_LABEL,
   type DriverProfileInput,
 } from "@/lib/schemas/driver-profile"
+import { PAY_METHODS } from "@/lib/schemas/settlements"
 
 import { updateDriverProfile } from "../actions"
 
@@ -277,6 +279,80 @@ export function DriverComplianceForm({
                     <FormMessage />
                   </FormItem>
                 )}
+              />
+            </Grid2>
+          </Section>
+
+          <Section
+            title="Pay"
+            description="Used to calculate driver pay on settlement statements. Admin-only."
+          >
+            <Grid2>
+              <FormField
+                control={form.control}
+                name="pay_method"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Pay method</FormLabel>
+                    <Select
+                      value={field.value}
+                      onValueChange={field.onChange}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select pay method" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {PAY_METHODS.map((m) => (
+                          <SelectItem key={m} value={m}>
+                            {PAY_METHOD_LABEL[m]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="pay_rate"
+                render={({ field }) => {
+                  const method = form.watch("pay_method")
+                  const hint =
+                    method === "percent_revenue"
+                      ? "Fraction of load revenue. 0.25 = 25%."
+                      : method === "per_km"
+                        ? "CAD per kilometre. 0.55 = $0.55/km."
+                        : "CAD per delivered load."
+                  return (
+                    <FormItem>
+                      <FormLabel>Pay rate</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          inputMode="decimal"
+                          step="0.0001"
+                          min={0}
+                          value={field.value ?? 0}
+                          onChange={(e) =>
+                            field.onChange(
+                              e.target.value === ""
+                                ? 0
+                                : Number(e.target.value),
+                            )
+                          }
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
+                      </FormControl>
+                      <p className="text-xs text-muted-foreground">{hint}</p>
+                      <FormMessage />
+                    </FormItem>
+                  )
+                }}
               />
             </Grid2>
           </Section>
