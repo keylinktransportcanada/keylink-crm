@@ -68,6 +68,34 @@ export default async function NewSettlementPage() {
         </p>
       </header>
 
+      <div className="rounded-lg border border-blue-200 bg-blue-50/60 px-4 py-3 text-xs leading-relaxed text-blue-900">
+        <p className="font-semibold uppercase tracking-wider">
+          How payroll works here
+        </p>
+        <ol className="mt-1 list-decimal space-y-0.5 pl-4">
+          <li>
+            Set the driver's <strong>pay method</strong> and{" "}
+            <strong>rate</strong> on their profile page (admin only).
+          </li>
+          <li>
+            Create a settlement — the system snapshots their rate and lists
+            every eligible load.
+          </li>
+          <li>
+            Add bonuses or deductions on the detail page, then finalize.
+          </li>
+          <li>
+            Pay the driver outside this system (e-transfer, cheque, direct
+            deposit). Come back and click <strong>Mark paid</strong> to
+            record the date, method, and reference number.
+          </li>
+        </ol>
+        <p className="mt-1 text-blue-900/75">
+          This is a statement-of-record tool — the CRM doesn't move money
+          itself.
+        </p>
+      </div>
+
       <NewSettlementForm drivers={driverList} />
     </div>
   )

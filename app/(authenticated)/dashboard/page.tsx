@@ -1284,6 +1284,18 @@ async function DriverView({ profile }: { profile: CurrentProfile }) {
     .eq("profile_id", profile.id)
     .maybeSingle()
 
+  // Latest settlement (any status) so we can surface a "My pay" card. RLS
+  // scopes to the driver's own settlements.
+  const { data: latestSettlement } = await supabase
+    .from("driver_settlements")
+    .select(
+      "id, status, period_start, period_end, total_cad, paid_at, paid_method",
+    )
+    .eq("driver_id", profile.id)
+    .order("period_start", { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
   // Most-recent inspection so we can tell the driver whether they've already
   // done a pre-trip today. RLS scopes this to their own inspections.
   const { data: lastInspection } = await supabase
@@ -1606,6 +1618,22 @@ async function DriverView({ profile }: { profile: CurrentProfile }) {
 
       <DriverCorrectionToast correction={recentCorrection} />
 
+      <DriverPayWidget
+        latest={
+          latestSettlement
+            ? {
+                id: latestSettlement.id,
+                status: latestSettlement.status,
+                period_start: latestSettlement.period_start,
+                period_end: latestSettlement.period_end,
+                total_cad: Number(latestSettlement.total_cad),
+                paid_at: latestSettlement.paid_at,
+                paid_method: latestSettlement.paid_method,
+              }
+            : null
+        }
+      />
+
       <DriverComplianceWidget compliance={compliance ?? null} />
 
       <DriverDocumentsWidget docs={myDocuments} today={today} />
@@ -1903,6 +1931,90 @@ function QuickActions() {
 // Driver-side compliance summary on /dashboard. Three small status cards
 // (licence / medical / FAST) plus a heads-up if anything is expired or
 // imminent. RLS already lets the driver self-read their compliance row.
+// "My pay" card on the driver dashboard. Shows the latest settlement —
+// paid (green), finalized-and-waiting (blue), or draft (muted) — and
+// links into /account/settlements for the full history. Hidden if the
+// driver has no settlements yet.
+function DriverPayWidget({
+  latest,
+}: {
+  latest: {
+    id: string
+    status: string
+    period_start: string
+    period_end: string
+    total_cad: number
+    paid_at: string | null
+    paid_method: string | null
+  } | null
+}) {
+  if (!latest) return null
+
+  const CADfmt = new Intl.NumberFormat("en-CA", {
+    style: "currency",
+    currency: "CAD",
+    maximumFractionDigits: 2,
+  })
+  const status = latest.status as "draft" | "finalized" | "paid"
+  const tone =
+    status === "paid"
+      ? "border-emerald-200 bg-emerald-50/60"
+      : status === "finalized"
+        ? "border-blue-200 bg-blue-50/60"
+        : "border-amber-200 bg-amber-50/60"
+  const accentText =
+    status === "paid"
+      ? "text-emerald-900"
+      : status === "finalized"
+        ? "text-blue-900"
+        : "text-amber-900"
+
+  const statusLine =
+    status === "paid" && latest.paid_at
+      ? `Paid ${format(parseISO(latest.paid_at), "MMM d, yyyy")}${latest.paid_method ? ` via ${latest.paid_method}` : ""}`
+      : status === "finalized"
+        ? "Finalized · payment pending"
+        : "Draft · totals may still change"
+
+  return (
+    <Link
+      href={`/account/settlements/${latest.id}`}
+      className={cn(
+        "flex items-center justify-between gap-4 rounded-xl border p-5 transition-all",
+        "shadow-[0_1px_2px_rgba(18,41,74,0.04),0_8px_24px_-12px_rgba(18,41,74,0.10)]",
+        "hover:-translate-y-0.5 hover:shadow-[0_4px_8px_rgba(18,41,74,0.06),0_16px_32px_-12px_rgba(18,41,74,0.18)]",
+        tone,
+      )}
+    >
+      <div className="flex flex-col gap-1">
+        <span
+          className={cn(
+            "text-[10px] font-semibold uppercase tracking-[0.18em]",
+            accentText,
+          )}
+        >
+          My pay · {format(parseISO(latest.period_start), "MMM d")} →{" "}
+          {format(parseISO(latest.period_end), "MMM d, yyyy")}
+        </span>
+        <span
+          className={cn(
+            "font-display text-3xl tracking-wide",
+            accentText,
+          )}
+        >
+          {CADfmt.format(latest.total_cad)}
+        </span>
+        <span className={cn("text-xs", accentText, "opacity-80")}>
+          {statusLine}
+        </span>
+      </div>
+      <div className={cn("text-xs font-medium", accentText)}>
+        View statement →
+      </div>
+    </Link>
+  )
+}
+
 function DriverComplianceWidget({
   compliance,
 }: {

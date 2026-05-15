@@ -1,25 +1,17 @@
 import Link from "next/link"
-import { format, parseISO } from "date-fns"
+import { parseISO } from "date-fns"
 import { ChevronLeft, Plus, Wallet } from "lucide-react"
 
 import { buttonVariants } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
 import { requireRole } from "@/lib/auth"
-import {
-  SETTLEMENT_STATUS_LABEL,
-  type SettlementStatus,
-} from "@/lib/schemas/settlements"
+import type { SettlementStatus } from "@/lib/schemas/settlements"
 import { createClient } from "@/lib/supabase/server"
 import { cn } from "@/lib/utils"
 
+import { SettlementRow, type SettlementRowData } from "./settlement-row"
+
 export const dynamic = "force-dynamic"
 export const revalidate = 0
-
-const STATUS_TONE: Record<SettlementStatus, string> = {
-  draft: "border-amber-200 bg-amber-50 text-amber-800",
-  finalized: "border-blue-200 bg-blue-50 text-blue-800",
-  paid: "border-emerald-200 bg-emerald-50 text-emerald-800",
-}
 
 const CAD = new Intl.NumberFormat("en-CA", {
   style: "currency",
@@ -145,61 +137,24 @@ export default async function SettlementsListPage() {
             </thead>
             <tbody className="divide-y divide-border">
               {settlements.map((s) => {
-                const driver = s.driver as { full_name: string | null; employee_id: string | null } | { full_name: string | null; employee_id: string | null }[] | null
+                const driver = s.driver as
+                  | { full_name: string | null; employee_id: string | null }
+                  | { full_name: string | null; employee_id: string | null }[]
+                  | null
                 const d = Array.isArray(driver) ? driver[0] : driver
-                const status = s.status as SettlementStatus
-                return (
-                  <tr
-                    key={s.id}
-                    className="bg-card transition-colors hover:bg-muted/40"
-                  >
-                    <td className="px-4 py-2.5">
-                      <div className="flex flex-col leading-tight">
-                        <span className="font-medium text-brand-navy">
-                          {d?.full_name ?? "Driver"}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          {d?.employee_id ?? "—"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-2.5 text-xs text-muted-foreground">
-                      {format(parseISO(s.period_start), "MMM d")}
-                      {" → "}
-                      {format(parseISO(s.period_end), "MMM d, yyyy")}
-                    </td>
-                    <td className="px-4 py-2.5 tabular-nums">
-                      {s.loads_count ?? 0}
-                    </td>
-                    <td className="px-4 py-2.5 text-right tabular-nums">
-                      {CAD.format(Number(s.gross_load_cad ?? 0))}
-                    </td>
-                    <td className="px-4 py-2.5 text-right tabular-nums text-muted-foreground">
-                      {CAD.format(Number(s.adjustments_cad ?? 0))}
-                    </td>
-                    <td className="px-4 py-2.5 text-right font-semibold tabular-nums">
-                      {CAD.format(Number(s.total_cad ?? 0))}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Badge
-                        className={cn(
-                          "border text-[10px] font-semibold uppercase tracking-wider",
-                          STATUS_TONE[status],
-                        )}
-                      >
-                        {SETTLEMENT_STATUS_LABEL[status]}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-2.5 text-right">
-                      <Link
-                        href={`/accounting/settlements/${s.id}`}
-                        className="text-xs font-medium text-brand-teal-dark hover:underline"
-                      >
-                        Open →
-                      </Link>
-                    </td>
-                  </tr>
-                )
+                const row: SettlementRowData = {
+                  id: s.id,
+                  status: s.status as SettlementStatus,
+                  period_start: s.period_start,
+                  period_end: s.period_end,
+                  loads_count: s.loads_count ?? 0,
+                  gross_load_cad: Number(s.gross_load_cad ?? 0),
+                  adjustments_cad: Number(s.adjustments_cad ?? 0),
+                  total_cad: Number(s.total_cad ?? 0),
+                  driver_full_name: d?.full_name ?? null,
+                  driver_employee_id: d?.employee_id ?? null,
+                }
+                return <SettlementRow key={s.id} row={row} />
               })}
             </tbody>
           </table>

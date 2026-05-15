@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useMemo, useState, useTransition } from "react"
 import { useForm } from "react-hook-form"
@@ -170,7 +171,14 @@ export function NewSettlementForm({ drivers }: { drivers: DriverOption[] }) {
                 <Select value={field.value} onValueChange={field.onChange}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select driver" />
+                      <SelectValue placeholder="Select driver">
+                        {(v: string | null) => {
+                          if (!v) return "Select driver"
+                          const d = drivers.find((x) => x.id === v)
+                          if (!d) return "Select driver"
+                          return `${d.full_name}${d.employee_id ? ` · ${d.employee_id}` : ""}`
+                        }}
+                      </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -222,12 +230,18 @@ export function NewSettlementForm({ drivers }: { drivers: DriverOption[] }) {
             </span>
             <span className="text-muted-foreground">·</span>
             <span className="font-medium">
-              {formatPayRate(selectedDriver.pay_method, selectedDriver.pay_rate)}
+              {formatPayRate(
+                selectedDriver.pay_method,
+                selectedDriver.pay_rate,
+              )}
             </span>
             {selectedDriver.pay_rate === 0 ? (
-              <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-800">
-                Rate is 0 — set it on the driver page first
-              </span>
+              <Link
+                href={`/drivers/${selectedDriver.id}#pay`}
+                className="ml-2 inline-flex items-center gap-1 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-800 hover:bg-amber-200"
+              >
+                Rate is 0 — set it on the driver page →
+              </Link>
             ) : null}
           </div>
         ) : null}

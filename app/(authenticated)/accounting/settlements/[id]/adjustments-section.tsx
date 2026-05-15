@@ -154,7 +154,15 @@ export function AdjustmentsSection({
                   <Select value={field.value} onValueChange={field.onChange}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue>
+                          {(v: string | null) =>
+                            v
+                              ? ADJUSTMENT_KIND_LABEL[
+                                  v as keyof typeof ADJUSTMENT_KIND_LABEL
+                                ] ?? "Select"
+                              : "Select"
+                          }
+                        </SelectValue>
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>

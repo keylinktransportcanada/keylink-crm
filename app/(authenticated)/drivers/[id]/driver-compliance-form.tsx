@@ -284,6 +284,7 @@ export function DriverComplianceForm({
           </Section>
 
           <Section
+            id="pay"
             title="Pay"
             description="Used to calculate driver pay on settlement statements. Admin-only."
           >
@@ -300,7 +301,15 @@ export function DriverComplianceForm({
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select pay method" />
+                          <SelectValue placeholder="Select pay method">
+                            {(v: string | null) =>
+                              v
+                                ? PAY_METHOD_LABEL[
+                                    v as keyof typeof PAY_METHOD_LABEL
+                                  ] ?? "Select pay method"
+                                : "Select pay method"
+                            }
+                          </SelectValue>
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
@@ -407,16 +416,21 @@ export function DriverComplianceForm({
 }
 
 function Section({
+  id,
   title,
   description,
   children,
 }: {
+  id?: string
   title: string
   description?: string
   children: React.ReactNode
 }) {
   return (
-    <section className="flex flex-col gap-4 rounded-lg border border-border bg-card/40 p-5">
+    <section
+      id={id}
+      className="flex flex-col gap-4 rounded-lg border border-border bg-card/40 p-5"
+    >
       <div className="flex flex-col gap-1">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
           {title}

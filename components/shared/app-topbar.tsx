@@ -13,6 +13,7 @@ import {
   MessageSquareMore,
   Search,
   Truck,
+  Wallet,
 } from "lucide-react"
 
 import { CommandPalette } from "./command-palette"
@@ -194,6 +195,7 @@ export function AppTopbar({
     inspectionMessages,
     expiries,
     statusEvents,
+    paymentEvents,
     urgentCount,
     totalCount,
     unseenCount,
@@ -216,6 +218,9 @@ export function AppTopbar({
       .sort((a, b) => b.rank - a.rank)
     const ev = notifications
       .filter((n) => n.kind === "status")
+      .sort((a, b) => b.rank - a.rank)
+    const payments = notifications
+      .filter((n) => n.kind === "payment")
       .sort((a, b) => b.rank - a.rank)
     const urgent =
       ins.length +
@@ -251,6 +256,7 @@ export function AppTopbar({
       inspectionMessages: messages,
       expiries: ex,
       statusEvents: ev,
+      paymentEvents: payments,
       urgentCount: urgent,
       totalCount: notifications.length,
       unseenCount: unseen,
@@ -444,6 +450,22 @@ export function AppTopbar({
                     />
                   ) : null}
                   {statusEvents.map((n) => (
+                    <NotificationRow
+                      key={n.id}
+                      notification={n}
+                      seen={seenIds?.has(n.id) ?? false}
+                      onNavigate={() => setPopoverOpen(false)}
+                    />
+                  ))}
+
+                  {paymentEvents.length > 0 ? (
+                    <SectionHeader
+                      icon={<Wallet className="size-3.5" />}
+                      label="Payments"
+                      count={paymentEvents.length}
+                    />
+                  ) : null}
+                  {paymentEvents.map((n) => (
                     <NotificationRow
                       key={n.id}
                       notification={n}

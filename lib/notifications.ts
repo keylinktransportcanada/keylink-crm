@@ -12,7 +12,11 @@ import type { LoadStatus } from "@/lib/supabase/types"
 import type { Role } from "@/lib/auth"
 import { createClient } from "@/lib/supabase/server"
 
-export type NotificationKind = "expiry" | "status" | "inspection"
+export type NotificationKind =
+  | "expiry"
+  | "status"
+  | "inspection"
+  | "payment"
 
 export type Notification = {
   id: string
@@ -471,6 +475,54 @@ export async function getNotificationsFor(
         href: `/loads/${e.load_id}`,
         rank: new Date(e.created_at).getTime() / 1000,
         timestamp: e.created_at,
+      })
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Driver-facing payment notifications. Surfaces settlements that have
+  // been marked paid in the last 30 days so the driver gets a bell entry
+  // confirming the deposit. Admin/dispatcher/accounting don't see these
+  // here — they have the settlements list under /accounting instead.
+  // ------------------------------------------------------------------
+  if (role === "driver") {
+    const sinceIso = `${isoDaysAgo(today, 30)}T00:00:00Z`
+    const { data: paidSettlements } = await supabase
+      .from("driver_settlements")
+      .select(
+        "id, period_start, period_end, total_cad, paid_at, paid_method",
+      )
+      .eq("driver_id", userId)
+      .eq("status", "paid")
+      .gte("paid_at", sinceIso)
+      .order("paid_at", { ascending: false })
+      .limit(10)
+
+    type PaidRow = {
+      id: string
+      period_start: string
+      period_end: string
+      total_cad: number
+      paid_at: string
+      paid_method: string | null
+    }
+
+    for (const s of (paidSettlements ?? []) as PaidRow[]) {
+      const amount = Number(s.total_cad).toLocaleString("en-CA", {
+        style: "currency",
+        currency: "CAD",
+        maximumFractionDigits: 2,
+      })
+      out.push({
+        id: `payment:${s.id}`,
+        kind: "payment",
+        severity: "ok",
+        tag: "Payment",
+        title: `${amount} paid`,
+        body: `${s.period_start} to ${s.period_end}${s.paid_method ? ` via ${s.paid_method}` : ""}`,
+        href: `/account/settlements/${s.id}`,
+        rank: new Date(s.paid_at).getTime() / 1000,
+        timestamp: s.paid_at,
       })
     }
   }
